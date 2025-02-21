@@ -12,6 +12,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { ChatController } from './chat/chat.controller';
 import { ChatModule } from './chat/chat.module';
+import { FolderModule } from './folder/folder.module';
 
 @Module({
   imports:  [
@@ -25,6 +26,7 @@ import { ChatModule } from './chat/chat.module';
     EmailserviceModule,
     ProfileModule,
     ChatModule,
+    FolderModule,
   ],
   controllers: [AppController, ChatController],
   providers: [
