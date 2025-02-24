@@ -49,35 +49,20 @@ export class AuthService {
   ): Promise<User> {
     return await this.userModel.findOne({ email: createUserDto.email });
   }
-  async checkUserExistWithPhone(createUserDto: CreateUserDto): Promise<User> {
-    return await this.userModel.findOne({ phone: createUserDto.phone });
-  }
+  // async checkUserExistWithPhone(createUserDto: CreateUserDto): Promise<User> {
+  //   return await this.userModel.findOne({ phone: createUserDto.phone });
+  // }
   async create(createUserDto: CreateUserDto): Promise<any> {
-    console.log("createUserDto===>",createUserDto);
-    
-    // Check if the user already exists
-    // console.time('STARTED');
-    // console.time('userExistCheck===============');
-    const existingUser = await this.userModel.findOne({
-      $or: [
-        { name: createUserDto.name },
+
+    const existingUser = await this.userModel.findOne(
         { email: createUserDto.email },
-        { phone: createUserDto.phone },
-      ],
-    });
-    // console.timeEnd('userExistCheck');
-    console.log("===========",existingUser);
+    );
     
-    if (existingUser) {
+   
       if (existingUser.email === createUserDto.email) {
         throw new BadRequestException('User with this Email already exists!');
       }
-      if (existingUser.phone === createUserDto.phone) {
-        throw new BadRequestException(
-          'User with this Phone Number already exists!',
-        );
-      }
-    }
+     
     // Create the user
     const newUser = new this.userModel({ ...createUserDto });
     let otp = generateOtp();
@@ -91,6 +76,7 @@ export class AuthService {
       expiredAt: currentDate,
     });
     // Send OTP email
+    console.log(otp)
     console.time('Email Service');
     this.emailService
       .sendOtpEmail(newUser.email, otp, newUser.name)
@@ -335,9 +321,9 @@ export class AuthService {
       if (otpData && otpData.updatedAt) {
         const timeDifference = Date.now() - otpData.updatedAt.getTime();
         // Check if the last OTP was sent less than 30 seconds ago
-        if (timeDifference < 30000) {
+        if (timeDifference < 90*1000) {
           throw new BadRequestException(
-            'You can resend the OTP only after 30 seconds.',
+            'You can resend the OTP only after 1 minute  and 30 seconds.',
           );
         }
       }

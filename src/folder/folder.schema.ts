@@ -1,5 +1,5 @@
 import { Schema, Prop, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import mongoose, { Document } from 'mongoose';
 
 // Define the Folder Schema
 @Schema()
@@ -10,8 +10,8 @@ export class Folder extends Document {
   @Prop({ default: null })
   parentFolderId: string;
 
-  @Prop({ required: true })
-  ownerId: string;
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
+  ownerId: mongoose.Schema.Types.ObjectId;
 
   @Prop({ default: Date.now })
   createdAt: Date;

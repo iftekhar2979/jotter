@@ -1,16 +1,27 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import mongoose, { Model, ObjectId } from 'mongoose';
 import { Folder } from './folder.schema';
 
 @Injectable()
 export class FolderService {
-  constructor(
-    @InjectModel(Folder.name) private folderModel: Model<Folder>,
-  ) {}
+  constructor(@InjectModel(Folder.name) private folderModel: Model<Folder>) {}
 
   // Create a new folder
-  async createFolder(name: string, ownerId: string, parentFolderId: string = null): Promise<Folder> {
+  async createFolder(
+    name: string,
+    ownerId: any,
+    parentFolderId: string | null = null,
+  ): Promise<Folder> {
+    const folderList = await this.getFoldersByOwner({
+      ownerId,
+      parentFolderId,
+      name,
+    });
+    if (folderList) {
+      throw new BadRequestException('Folder Already Exist');
+    }
+
     const folder = new this.folderModel({
       name,
       ownerId,
@@ -21,10 +32,25 @@ export class FolderService {
   }
 
   // Get folders by owner
-  async getFoldersByOwner(ownerId: string): Promise<Folder[]> {
-    return this.folderModel.find({ ownerId });
+  getFoldersByOwner(query: {
+    ownerId?: ObjectId;
+    parentFolderId?: string | null;
+    name?: string;
+  }): Promise<Folder> {
+    return this.folderModel.findOne(query);
+  }
+  getAllFolders(query: {
+    ownerId?: ObjectId;
+    parentFolderId?: string | null;
+    name?: string;
+  }): Promise<Folder[]> {
+    return this.folderModel.find(query);
   }
 
+  async getFolders(ownerId: ObjectId) {
+    let folders = await this.getAllFolders({ ownerId });
+    return { message: 'Folders Retrived Successfully!', data: folders };
+  }
   // Get folder by id
   async getFolderById(id: string): Promise<Folder> {
     return this.folderModel.findById(id);
@@ -32,7 +58,11 @@ export class FolderService {
 
   // Update a folder
   async updateFolder(id: string, name: string): Promise<Folder> {
-    return this.folderModel.findByIdAndUpdate(id, { name, updatedAt: Date.now() }, { new: true });
+    return this.folderModel.findByIdAndUpdate(
+      id,
+      { name, updatedAt: Date.now() },
+      { new: true },
+    );
   }
 
   // Delete a folder
