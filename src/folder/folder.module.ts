@@ -7,18 +7,16 @@ import { Folder, FolderSchema } from './folder.schema';
 import { UsersModule } from 'src/users/users.module';
 
 @Module({
-  imports:[
+  imports: [
     JwtModule.register({
       secret: 'yourSecretKey', // You should move this to a config file or env variables
       signOptions: { expiresIn: '30d' }, // Token expiration time
     }),
-    MongooseModule.forFeature([
-      {name:Folder.name,schema:FolderSchema}
-    ]),
+    MongooseModule.forFeature([{ name: Folder.name, schema: FolderSchema }]),
     UsersModule,
-
   ],
   controllers: [FolderController],
-  providers: [FolderService]
+  providers: [FolderService],
+  exports: [FolderService],
 })
 export class FolderModule {}

@@ -39,6 +39,12 @@ export class FolderService {
   }): Promise<Folder> {
     return this.folderModel.findOne(query);
   }
+  getFolderByIdAndUserId(query: {
+    ownerId?: ObjectId;
+    folderId?: ObjectId;
+  }): Promise<Folder> {
+    return this.folderModel.findOne(query);
+  }
   getAllFolders(query: {
     ownerId?: ObjectId;
     parentFolderId?: string | null;
