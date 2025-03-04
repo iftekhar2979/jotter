@@ -53,16 +53,15 @@ export class AuthService {
   //   return await this.userModel.findOne({ phone: createUserDto.phone });
   // }
   async create(createUserDto: CreateUserDto): Promise<any> {
-
-    const existingUser = await this.userModel.findOne(
-        { email: createUserDto.email },
-    );
-    
-   
+    const existingUser = await this.userModel.findOne({
+      email: createUserDto.email,
+    });
+    if (existingUser) {
       if (existingUser.email === createUserDto.email) {
         throw new BadRequestException('User with this Email already exists!');
       }
-     
+    }
+
     // Create the user
     const newUser = new this.userModel({ ...createUserDto });
     let otp = generateOtp();
@@ -76,7 +75,7 @@ export class AuthService {
       expiredAt: currentDate,
     });
     // Send OTP email
-    console.log(otp)
+    console.log(otp);
     console.time('Email Service');
     this.emailService
       .sendOtpEmail(newUser.email, otp, newUser.name)
@@ -131,7 +130,7 @@ export class AuthService {
 
   async find(authDto) {
     console.log(authDto);
-    
+
     let user = await this.userModel.findOne({ email: authDto.email });
     if (!user) {
       throw new BadRequestException('User not Found!');
@@ -195,10 +194,9 @@ export class AuthService {
   }
   async verifyOtp(user: Omit<IUser, 'password'>, code: string) {
     let otpValue = await this.otpModel.findOne({ userID: user.id });
-    if(!otpValue){
+    if (!otpValue) {
       throw new BadRequestException({
-        message:
-          'OTP has been expired!',
+        message: 'OTP has been expired!',
         error: 'Bad Request',
       });
     }
@@ -210,10 +208,15 @@ export class AuthService {
       await otpValue.save();
       throw new NotFoundException('OTP not found!');
     }
-    const updatedUser = this.userModel.findByIdAndUpdate(user.id, { isEmailVerified: true }) as any;
+    const updatedUser = this.userModel.findByIdAndUpdate(user.id, {
+      isEmailVerified: true,
+    }) as any;
 
     // Delete OTP from the database after successful verification
-    const deleteOtpPromise = this.otpModel.deleteOne({ userID: user.id, oneTimePassword: code });
+    const deleteOtpPromise = this.otpModel.deleteOne({
+      userID: user.id,
+      oneTimePassword: code,
+    });
 
     // Wait for both operations to complete in parallel
     await Promise.all([updatedUser, deleteOtpPromise]);
@@ -228,7 +231,7 @@ export class AuthService {
         role: user.role,
         tokenFor: 'forget-password',
       };
-    }else{
+    } else {
       payload = {
         email: user.email,
         id: user.id,
@@ -237,13 +240,13 @@ export class AuthService {
         tokenFor: 'email-verification',
       };
     }
-  
+
     const token = this.jwtService.sign(payload);
     return { message: 'OTP Verified Successfully', data: {}, token };
   }
   async resendOtp(user: Omit<IUser, 'password'>) {
     // Retrieve the last OTP entry for the user
-    console.log("user",user)
+    console.log('user', user);
     let otpData: otp = await this.otpModel.findOne({ userID: user.id });
     // If OTP data exists, check the time difference
     if (otpData && otpData.updatedAt) {
@@ -321,7 +324,7 @@ export class AuthService {
       if (otpData && otpData.updatedAt) {
         const timeDifference = Date.now() - otpData.updatedAt.getTime();
         // Check if the last OTP was sent less than 30 seconds ago
-        if (timeDifference < 90*1000) {
+        if (timeDifference < 90 * 1000) {
           throw new BadRequestException(
             'You can resend the OTP only after 1 minute  and 30 seconds.',
           );
@@ -345,13 +348,13 @@ export class AuthService {
           console.log(res);
         })
         .catch((error) => {
-          console.log("email Send Errror")
+          console.log('email Send Errror');
         });
       // Save the new OTP in the database
       await saveOtp.save();
       let payload = {
         id: user.id,
-        email:user.email,
+        email: user.email,
         role: user.role,
         tokenFor: 'forget-password',
       };

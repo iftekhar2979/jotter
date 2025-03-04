@@ -36,8 +36,6 @@ export const UserSchema = SchemaFactory.createForClass(User);
 // Pre-save hook to hash the password before saving
 UserSchema.pre('save', async function (next) {
   if (this.isModified('password')) {
-    console.time('Password Hashed');
-
     try {
       // Hash the password using Argon2
       this.password = await argon2.hash(this.password);
@@ -49,6 +47,15 @@ UserSchema.pre('save', async function (next) {
   }
   next();
 });
-
-//  UserSchema.index({  }); // Create a compound index on email and phone
 UserSchema.index({ name: 'text', phone: 'text' });
+@Schema({ timestamps: true })
+export class Storage extends Document {
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null })
+  userId: mongoose.ObjectId;
+  @Prop({ type: Number, default: 15360 })
+  total: number;
+  @Prop({ type: Number, default: 0 })
+  used: number;
+}
+
+export const StorageSchema = SchemaFactory.createForClass(Storage);

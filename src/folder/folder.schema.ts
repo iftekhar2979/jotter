@@ -10,6 +10,9 @@ export class Folder extends Document {
   @Prop({ default: null })
   parentFolderId: string;
 
+  @Prop({ default: '/' })
+  path: string;
+
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
   ownerId: mongoose.Schema.Types.ObjectId;
 

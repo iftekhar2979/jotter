@@ -13,6 +13,9 @@ import { join } from 'path';
 import { ChatController } from './chat/chat.controller';
 import { ChatModule } from './chat/chat.module';
 import { FolderModule } from './folder/folder.module';
+// import { MinioService } from './minio/minio.service';
+import { FilesModule } from './files/files.module';
+import { StorageModule } from './storage/storage.module';
 
 @Module({
   imports:  [
@@ -27,6 +30,8 @@ import { FolderModule } from './folder/folder.module';
     ProfileModule,
     ChatModule,
     FolderModule,
+    FilesModule,
+    StorageModule
   ],
   controllers: [AppController, ChatController],
   providers: [
@@ -35,6 +40,7 @@ import { FolderModule } from './folder/folder.module';
       useClass: ValidationExceptionFilter,
     },
     AppService,
+    // MinioService,
   ],
 })
 export class AppModule {}
