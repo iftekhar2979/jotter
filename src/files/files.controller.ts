@@ -1,8 +1,13 @@
+import { Test } from '@nestjs/testing';
+import { Type } from 'class-transformer';
+import mongoose, { ObjectId, Types } from 'mongoose';
 import { multerConfig, multerS3Config } from 'src/common/multer/multer.config';
 import {
   Body,
   Controller,
+  Get,
   Post,
+  Query,
   Request,
   UploadedFile,
   UseGuards,
@@ -36,7 +41,33 @@ export class FilesController {
       console.error('❌ File upload failed - file is undefined');
       return { message: '❌ File upload failed' };
     }
-    console.log(file);
+    console.log('Folder', folderId);
     return this.fileService.uploadFiles(file, req.user.id, folderId);
+  }
+  @Get('')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('user')
+  async files(
+    @Request() req,
+    @Query('folderId') folderId: string,
+    @Query('name') name: string,
+    @Query('page') page: any,
+    @Query('limit') limit: any,
+  ) {
+    let folderObjectId: mongoose.Types.ObjectId | undefined;
+    if (folderId) {
+      folderObjectId = new mongoose.Types.ObjectId(folderId);
+    }
+    if(page || limit){
+        page=parseFloat(page as string)
+        limit=parseFloat(limit as string)
+    }
+    return this.fileService.getFilesAndFolders({
+      userId: new mongoose.Types.ObjectId(req.user.id) as unknown as ObjectId,
+      folder: folderObjectId as unknown as ObjectId,
+      name,
+      page,
+      limit
+    });
   }
 }

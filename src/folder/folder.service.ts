@@ -52,6 +52,22 @@ export class FolderService {
   }): Promise<Folder[]> {
     return this.folderModel.find(query);
   }
+  getFilesAndFolder({
+    ownerId,
+    parentFolderId =null,
+    name
+  }:{
+    ownerId?: ObjectId;
+    parentFolderId?: ObjectId | null;
+    name?: string;
+  }): Promise<Folder[]> {
+   return  this.folderModel.aggregate([{
+    $match:{
+      parentFolderId,
+      ownerId
+    }
+   }])
+  }
 
   async getFolders(ownerId: ObjectId) {
     let folders = await this.getAllFolders({ ownerId });

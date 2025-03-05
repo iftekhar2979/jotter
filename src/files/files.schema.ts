@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types } from 'aws-sdk/clients/acm';
-import mongoose, { mongo, ObjectId } from 'mongoose';
+import mongoose, { Document, mongo, ObjectId } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class Files extends Document {
@@ -15,10 +15,10 @@ export class Files extends Document {
   @Prop({ required: true, type: String })
   mimetype: string;
   @Prop({
-    required: true,
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Folder',
     index: true,
+    default:null
   })
   folder: ObjectId;
 }

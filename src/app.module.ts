@@ -16,6 +16,7 @@ import { FolderModule } from './folder/folder.module';
 // import { MinioService } from './minio/minio.service';
 import { FilesModule } from './files/files.module';
 import { StorageModule } from './storage/storage.module';
+import { MetaModule } from './meta/meta.module';
 
 @Module({
   imports:  [
@@ -31,7 +32,8 @@ import { StorageModule } from './storage/storage.module';
     ChatModule,
     FolderModule,
     FilesModule,
-    StorageModule
+    StorageModule,
+    MetaModule
   ],
   controllers: [AppController, ChatController],
   providers: [
