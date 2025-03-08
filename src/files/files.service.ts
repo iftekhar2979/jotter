@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import mongoose, { Model, ObjectId } from 'mongoose';
 import { Express } from 'express';
@@ -18,7 +22,6 @@ export class FileService {
 
   async uploadFile(file, userId: ObjectId, folderId: ObjectId) {
     if (!file) throw new BadRequestException('No file uploaded');
-    console.log('Fp;der', folderId);
     if (folderId) {
       const folderExist = await this.folderService.getFolderByIdAndUserId({
         ownerId: userId,
@@ -39,6 +42,27 @@ export class FileService {
     });
     return await newFile.save();
   }
+  async uploadMultipleFiles(files, userId: ObjectId, folderId: ObjectId) {
+    if (!files || files.length === 0)
+      throw new BadRequestException('No files uploaded');
+
+    const fileDocuments = files.map((file) => ({
+      userId,
+      fileName: file.originalname,
+      size: file.size,
+      url: file.location.split('/').slice(3, 5).join('/'),
+      mimetype: file.mimetype,
+      folder: folderId,
+    }));
+
+    if (folderId) {
+      const folderExist = await this.folderModel.findById(folderId);
+      if (!folderExist) throw new NotFoundException('Folder not found');
+    }
+
+    return await this.fileModel.insertMany(fileDocuments);
+  }
+
   async uploadFiles(file, userId: string, folderId: string): Promise<any> {
     let user = new mongoose.Types.ObjectId(userId) as unknown as ObjectId;
 
@@ -49,7 +73,7 @@ export class FileService {
     console.log(folder, folderId);
     return {
       message: 'File Uploaded Successfully!',
-      data: await this.uploadFile(file, user, folder),
+      data: await this.uploadMultipleFiles(file, user, folder),
     };
   }
   getFiles({
@@ -77,50 +101,91 @@ export class FileService {
     name,
     limit = 10,
     page = 1,
+    date,
+    enddate,
+    sort = 'desc',
+    sortedby = 'date',
   }: {
     userId?: ObjectId;
     folder?: ObjectId | null;
     name?: string;
     limit?: number;
     page?: number;
+    date?: string;
+    enddate?:string;
+    sort?: 'asc' | 'desc';
+    sortedby?: 'date' | 'size';
   }): Promise<any> {
     const matchQuery: any = { ownerId: userId };
 
     if (folder) {
-      matchQuery.parentFolderId = folder;
+      matchQuery.parentFolderId = folder.toString();
     } else {
       matchQuery.parentFolderId = null; // Fetch root-level folders
     }
     if (name) {
       matchQuery.name = { $regex: new RegExp(name, 'i') }; // Case-insensitive search
     }
+    if (date) {
+      const endDate = new Date(date); 
+      endDate.setHours(23, 59, 59, 999); 
+      matchQuery.createdAt = { $lte: endDate };
+    }
+    // if (enddate) {
+    //   const endDate = new Date(date); 
+    //   endDate.setHours(23, 59, 59, 999); 
+    //   matchQuery.createdAt = { $gte: endDate };
+    // }
+    console.log(matchQuery)
     const aggregationPipeline: any = [
       {
-        $match: matchQuery,
+        $match: matchQuery, // Match folders
       },
       {
         $unionWith: {
-          coll: 'files', // Join with 'files' collection
+          coll: 'files', // Merge with 'files' collection
           pipeline: [
             {
               $match: {
                 userId: userId,
                 folder: folder || null,
-                fileName: { $regex: new RegExp(name, 'i') },
+                ...(name
+                  ? { fileName: { $regex: new RegExp(name, 'i') } }
+                  : {}),
               },
             },
           ],
         },
       },
-      { $sort: { createdAt: -1 } },
       {
-        $skip: (page - 1) * limit,
+        $sort: { createdAt: -1 }, // Default sorting (by date, descending)
+      },
+      {
+        $skip: (page - 1) * limit, // Pagination
       },
       {
         $limit: limit,
       },
     ];
 
+    if (sort === 'asc' && sortedby === 'date') {
+      aggregationPipeline[2].$sort = { createdAt: 1 };
+    }
+    if (sort === 'asc' && sortedby === 'size') {
+      aggregationPipeline.splice(2, 0, { $sort: { size: 1 } }); // Apply size sorting before pagination
+    }
+    if (sort === 'desc' && sortedby === 'size') {
+      aggregationPipeline.splice(2, 0, { $sort: { size: -1 } });
+    }
+
+    if (sort == 'asc' && sortedby === 'date') {
+      aggregationPipeline[2].$sort.createdAt = 1;
+    }
+    if (sort == 'asc' && sortedby === 'size') {
+      aggregationPipeline[1].$unionWith.pipeline[1].$sort.size = 1;
+    }
+
+    console.log(aggregationPipeline[2]);
     // Execute aggregation pipeline on `folders` collection
     const result = await this.folderModel.aggregate(aggregationPipeline);
     return result;

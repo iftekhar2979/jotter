@@ -7,8 +7,8 @@ export class Folder extends Document {
   @Prop({ required: true })
   name: string;
 
-  @Prop({ default: null })
-  parentFolderId: string;
+  @Prop({ type: String,default:null })
+  parentFolderId:  string;
 
   @Prop({ default: '/' })
   path: string;

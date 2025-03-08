@@ -43,7 +43,9 @@ export class FolderService {
     ownerId?: ObjectId;
     folderId?: ObjectId;
   }): Promise<Folder> {
-    return this.folderModel.findOne(query);
+
+    console.log(query)
+    return this.folderModel.findOne({ownerId:query.ownerId,_id:query.folderId});
   }
   getAllFolders(query: {
     ownerId?: ObjectId;
