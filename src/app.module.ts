@@ -17,6 +17,8 @@ import { FolderModule } from './folder/folder.module';
 import { FilesModule } from './files/files.module';
 import { StorageModule } from './storage/storage.module';
 import { MetaModule } from './meta/meta.module';
+import { FavouriteModule } from './favourite/favourite.module';
+import { FavourtieController } from './favourtie/favourtie.controller';
 
 @Module({
   imports:  [
@@ -33,9 +35,10 @@ import { MetaModule } from './meta/meta.module';
     FolderModule,
     FilesModule,
     StorageModule,
-    MetaModule
+    MetaModule,
+    FavouriteModule
   ],
-  controllers: [AppController, ChatController],
+  controllers: [AppController, ChatController, FavourtieController],
   providers: [
     {
       provide: APP_FILTER,

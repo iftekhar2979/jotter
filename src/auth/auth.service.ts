@@ -49,16 +49,13 @@ export class AuthService {
   ): Promise<User> {
     return await this.userModel.findOne({ email: createUserDto.email });
   }
-  // async checkUserExistWithPhone(createUserDto: CreateUserDto): Promise<User> {
-  //   return await this.userModel.findOne({ phone: createUserDto.phone });
-  // }
   async create(createUserDto: CreateUserDto): Promise<any> {
     const existingUser = await this.userModel.findOne({
       email: createUserDto.email,
     });
     if (existingUser) {
       if (existingUser.email === createUserDto.email) {
-        throw new BadRequestException('User with this Email already exists!');
+        throw new BadRequestException('User with this email already exists!');
       }
     }
 
@@ -74,9 +71,7 @@ export class AuthService {
       userID: newUser._id,
       expiredAt: currentDate,
     });
-    // Send OTP email
-    console.log(otp);
-    console.time('Email Service');
+
     this.emailService
       .sendOtpEmail(newUser.email, otp, newUser.name)
       .then(() => {
@@ -85,28 +80,20 @@ export class AuthService {
       .catch((error) => {
         console.error('Error sending OTP email:', error);
       });
-    console.timeEnd('Email Service');
-    // Prepare JWT payload
     const payload = {
       email: newUser.email,
       id: newUser._id,
       role: newUser.role,
       name: newUser.name,
     };
-    // Sign the JWT token
     const token = this.jwtService.sign(payload);
-    console.time('Save User');
     let savedUser = await newUser.save();
-    console.timeEnd('Save User');
-    // Save the user, OTP, and profile information
+
     savedUser.password = undefined;
     savedUser.isEmailVerified = undefined;
     savedUser.isDeleted = undefined;
-    console.time('Save OTP');
     await saveOtp.save();
-    // console.timeEnd('Save OTP');
-    // console.timeEnd('STARTED');
-    // Return the saved user and JWT token
+
     return {
       message:
         'Please Check Your Email and Verify you email to get full access',

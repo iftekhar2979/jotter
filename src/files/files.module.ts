@@ -10,6 +10,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Files, FileSchema } from './files.schema';
 import { FolderModule } from 'src/folder/folder.module';
 import { Folder, FolderSchema } from 'src/folder/folder.schema';
+import { Storage, StorageSchema } from 'src/users/users.schema';
+import { FileStorage } from './services/file.storage.service';
 
 @Module({
   imports: [
@@ -17,13 +19,20 @@ import { Folder, FolderSchema } from 'src/folder/folder.schema';
       secret: 'yourSecretKey', // You should move this to a config file or env variables
       signOptions: { expiresIn: '30d' }, // Token expiration time
     }),
-       MongooseModule.forFeature([{ name: Files.name, schema: FileSchema },{ name: Folder.name, schema: FolderSchema }]),
+    MongooseModule.forFeature([
+      { name: Files.name, schema: FileSchema },
+      { name: Folder.name, schema: FolderSchema },
+      {
+        name: Storage.name,
+        schema: StorageSchema,
+      },
+    ]),
     ConfigModule,
     UsersModule,
-    FolderModule
+    FolderModule,
   ], // Ensure ConfigModule is imported
   controllers: [FilesController],
-  providers: [AwsS3StorageProvider,FileService], // Register the provider
-  exports: [AwsS3StorageProvider], // Export it if used in another module
+  providers: [AwsS3StorageProvider, FileService, FileStorage], // Register the provider
+  exports: [AwsS3StorageProvider, FileService, FileStorage], // Export it if used in another module
 })
 export class FilesModule {}

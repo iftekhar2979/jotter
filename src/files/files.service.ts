@@ -2,6 +2,7 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  HttpException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import mongoose, { Model, ObjectId } from 'mongoose';
@@ -11,14 +12,49 @@ import * as fs from 'fs';
 import { Files } from './files.schema';
 import { FolderService } from 'src/folder/folder.service';
 import { Folder } from 'src/folder/folder.schema';
+import { pagination } from 'src/common/pagination/pagination';
+import { Storage } from 'src/users/users.schema';
 
 @Injectable()
 export class FileService {
   constructor(
     @InjectModel(Files.name) private readonly fileModel: Model<Files>,
     @InjectModel(Folder.name) private readonly folderModel: Model<Folder>,
+    @InjectModel(Storage.name) private readonly storageModel: Model<Storage>,
     private folderService: FolderService,
   ) {}
+
+  async getFile(fileId) {
+    return await this.folderModel.findById(fileId);
+  }
+  async updateStorage({
+    userId,
+    size,
+    option,
+  }: {
+    userId: ObjectId;
+    size: number;
+    option: 'increment' | 'decrement';
+  }): Promise<void> {
+    console.log('Size:', size);
+
+    // Ensure the size is a positive number
+    if (size < 0) {
+      throw new Error('Size must be a positive number');
+    }
+
+    // Prepare the update data based on the option (increment or decrement)
+    const updateData =
+      option === 'increment'
+        ? { $inc: { used: size } }
+        : { $inc: { used: -size } };
+
+    // Perform the update on the Storage document
+    await this.storageModel.findOneAndUpdate({ userId }, updateData, {
+      upsert: true,
+      new: true,
+    });
+  }
 
   async uploadFile(file, userId: ObjectId, folderId: ObjectId) {
     if (!file) throw new BadRequestException('No file uploaded');
@@ -59,18 +95,27 @@ export class FileService {
       const folderExist = await this.folderModel.findById(folderId);
       if (!folderExist) throw new NotFoundException('Folder not found');
     }
-
+    let totalSize = (
+      files.reduce((acc, cur) => acc + cur.size, 0) /
+      (1024 * 1024)
+    ).toFixed(2);
+    await Promise.all([
+      this.fileModel.insertMany(fileDocuments),
+      this.updateStorage({
+        userId,
+        size: parseFloat(totalSize),
+        option: 'increment',
+      }),
+    ]);
     return await this.fileModel.insertMany(fileDocuments);
   }
 
   async uploadFiles(file, userId: string, folderId: string): Promise<any> {
     let user = new mongoose.Types.ObjectId(userId) as unknown as ObjectId;
-
     let folder = folderId
       ? (new mongoose.Types.ObjectId(folderId) as unknown as ObjectId)
       : null;
     if (!file) throw new BadRequestException('No file uploaded');
-    console.log(folder, folderId);
     return {
       message: 'File Uploaded Successfully!',
       data: await this.uploadMultipleFiles(file, user, folder),
@@ -112,7 +157,7 @@ export class FileService {
     limit?: number;
     page?: number;
     date?: string;
-    enddate?:string;
+    enddate?: string;
     sort?: 'asc' | 'desc';
     sortedby?: 'date' | 'size';
   }): Promise<any> {
@@ -127,16 +172,16 @@ export class FileService {
       matchQuery.name = { $regex: new RegExp(name, 'i') }; // Case-insensitive search
     }
     if (date) {
-      const endDate = new Date(date); 
-      endDate.setHours(23, 59, 59, 999); 
+      const endDate = new Date(date);
+      endDate.setHours(23, 59, 59, 999);
       matchQuery.createdAt = { $lte: endDate };
     }
     // if (enddate) {
-    //   const endDate = new Date(date); 
-    //   endDate.setHours(23, 59, 59, 999); 
+    //   const endDate = new Date(date);
+    //   endDate.setHours(23, 59, 59, 999);
     //   matchQuery.createdAt = { $gte: endDate };
     // }
-    console.log(matchQuery)
+    // console.log(matchQuery)
     const aggregationPipeline: any = [
       {
         $match: matchQuery, // Match folders
@@ -184,10 +229,40 @@ export class FileService {
     if (sort == 'asc' && sortedby === 'size') {
       aggregationPipeline[1].$unionWith.pipeline[1].$sort.size = 1;
     }
-
-    console.log(aggregationPipeline[2]);
     // Execute aggregation pipeline on `folders` collection
     const result = await this.folderModel.aggregate(aggregationPipeline);
-    return result;
+    const total = await this.folderModel.aggregate([
+      {
+        $match: matchQuery, // Match folders
+      },
+      {
+        $unionWith: {
+          coll: 'files', // Merge with 'files' collection
+          pipeline: [
+            {
+              $match: {
+                userId: userId,
+                folder: folder || null,
+                ...(name
+                  ? { fileName: { $regex: new RegExp(name, 'i') } }
+                  : {}),
+              },
+            },
+          ],
+        },
+      },
+      {
+        $count: 'totalCount', // Count the total number of documents
+      },
+    ]);
+    // console.log(total[0].totalCount);
+    if (total.length === 0) {
+      throw new HttpException('No Files Found', 404);
+    }
+    return {
+      message: 'folder retrived successfully',
+      data: result,
+      pagination: pagination(limit, page, total[0].totalCount),
+    };
   }
 }
