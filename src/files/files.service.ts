@@ -24,8 +24,8 @@ export class FileService {
     private folderService: FolderService,
   ) {}
 
-  async getFile(fileId) {
-    return await this.folderModel.findById(fileId);
+  getFile(fileId) {
+    return this.fileModel.findById(fileId);
   }
   async updateStorage({
     userId,
@@ -99,7 +99,8 @@ export class FileService {
       files.reduce((acc, cur) => acc + cur.size, 0) /
       (1024 * 1024)
     ).toFixed(2);
-    await Promise.all([
+    // console.log(fileDocuments);
+    const [data, storage] = await Promise.all([
       this.fileModel.insertMany(fileDocuments),
       this.updateStorage({
         userId,
@@ -107,7 +108,7 @@ export class FileService {
         option: 'increment',
       }),
     ]);
-    return await this.fileModel.insertMany(fileDocuments);
+    return { message: 'File uploaded successfully!', data: data };
   }
 
   async uploadFiles(file, userId: string, folderId: string): Promise<any> {
@@ -181,7 +182,7 @@ export class FileService {
     //   endDate.setHours(23, 59, 59, 999);
     //   matchQuery.createdAt = { $gte: endDate };
     // }
-    // console.log(matchQuery)
+    console.log(userId, folder);
     const aggregationPipeline: any = [
       {
         $match: matchQuery, // Match folders

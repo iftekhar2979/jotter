@@ -40,7 +40,7 @@ export class FileStorage {
     page = 1,
   }: {
     userId: ObjectId;
-    type: 'image' | 'pdf' | 'txt';
+    type: 'image' | 'pdf' | 'text';
     name: string;
     limit: number;
     page: number;

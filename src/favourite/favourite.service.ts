@@ -16,15 +16,15 @@ export class FavouriteService {
   async makeFavourite({
     userId,
     fileId,
-  }:{
+  }: {
     userId: ObjectId;
-    fileId: string;
+    fileId: ObjectId;
   }) {
     const file = await this.fileService.getFile(fileId);
     if (!file) {
       throw new HttpException('File not found!', 404);
     }
-    await this.favouriteModel.create({ userId, fileId });
+    await this.favouriteModel.create({ userId, fileId: file._id });
     return { message: 'file Added to favourite', data: file };
   }
   async getFavouriteFiles({
@@ -80,11 +80,10 @@ export class FavouriteService {
         $project: {
           _id: 1,
           fileId: 1,
-          'file.fileName': 1,
-          'file.size': 1,
-          'file.url': 1,
-          'file.mimetype': 1,
-          'file.folder': 1,
+          fileName: '$file.fileName',
+          size: '$file.size',
+          url: '$file.url',
+          mimetype: '$file.mimetype',
         },
       },
     ];
@@ -121,6 +120,9 @@ export class FavouriteService {
         },
       ]),
     ]);
+    if (count.length === 0) {
+      throw new HttpException('Empty favourite list', 404);
+    }
     return {
       message: 'favourite retrives successfully',
       data: files,

@@ -19,7 +19,7 @@ export class ResponseInterceptor implements NestInterceptor {
       map((data) => {
         response.statusCode = data?.statusCode || 200;
         let message = 'Request was successful';
-        console.log(data)
+        // console.log(data)
         if(data?.token){
           return {
             ok: true,

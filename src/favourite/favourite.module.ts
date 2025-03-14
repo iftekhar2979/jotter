@@ -5,6 +5,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Favourite, FavouriteSchema } from './favourite.schema';
 import { FilesModule } from 'src/files/files.module';
 import { JwtModule } from '@nestjs/jwt';
+import { UsersModule } from 'src/users/users.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { JwtModule } from '@nestjs/jwt';
       secret: 'yourSecretKey', // You should move this to a config file or env variables
       signOptions: { expiresIn: '30d' }, // Token expiration time
     }),
+    UsersModule
   ],
   providers: [FavouriteService],
   controllers: [FavouriteController],

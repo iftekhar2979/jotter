@@ -122,10 +122,7 @@ export class FilesController {
     @Query('name') name: string,
     @Query('page') page: any,
     @Query('limit') limit: any,
-    @Query('type') type: 'image' | 'pdf' | 'txt',
-    // @Query('date') date: string,
-    // @Query('enddate') enddate: string,
-    // @Query('sortedby') sortedby: 'date' | 'size',
+    @Query('type') type: 'image' | 'pdf' | 'text',
   ) {
     if (page || limit) {
       page = parseFloat(page as string);
