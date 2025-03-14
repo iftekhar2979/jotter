@@ -55,6 +55,13 @@ export class FileService {
       new: true,
     });
   }
+  getStorageInfo({
+    userId,
+  }: {
+    userId: string;
+  }) {
+    return this.storageModel.findOne({ userId }, { used: 1, total: 1 });
+  }
 
   async uploadFile(file, userId: ObjectId, folderId: ObjectId) {
     if (!file) throw new BadRequestException('No file uploaded');

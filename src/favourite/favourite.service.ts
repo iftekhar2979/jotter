@@ -24,8 +24,17 @@ export class FavouriteService {
     if (!file) {
       throw new HttpException('File not found!', 404);
     }
-    await this.favouriteModel.create({ userId, fileId: file._id });
-    return { message: 'file Added to favourite', data: file };
+    const alreadyFavourite = await this.favouriteModel.findById(fileId);
+    if (!alreadyFavourite) {
+      await this.favouriteModel.create({ userId, fileId: file._id });
+      return { message: 'file Added to favourite', data: file };
+    } else {
+      const deletedFile = await this.favouriteModel.deleteOne({
+        userId,
+        fileId: file._id,
+      });
+      return { message: 'file removed from favourite', data: deletedFile };
+    }
   }
   async getFavouriteFiles({
     userId,

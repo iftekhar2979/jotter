@@ -2,6 +2,7 @@ import { Test } from '@nestjs/testing';
 import { Type } from 'class-transformer';
 import mongoose, { ObjectId, Types } from 'mongoose';
 import { multerConfig, multerS3Config } from 'src/common/multer/multer.config';
+import fs from 'fs'
 import {
   BadRequestException,
   Body,
@@ -25,6 +26,9 @@ import { RolesGuard } from 'src/auth/guard/role-gurad';
 import { Roles } from 'src/common/custom-decorator/role.decorator';
 import { FileService } from './files.service';
 import { FileStorage } from './services/file.storage.service';
+import { text } from 'stream/consumers';
+import { Readable } from 'stream';
+import { writeTheFile } from 'src/common/utils/writetext';
 //   import { AwsS3StorageProvider } from '../storage/aws-s3-storage.provider';
 
 @Controller('files')
@@ -66,8 +70,32 @@ export class FilesController {
       console.error('❌ File upload failed - file is undefined');
       throw new BadRequestException('File Upload Failed');
     }
-    console.log('Folder', file);
     return this.fileService.uploadFiles(file, req.user.id, folderId);
+  }
+  @Post('text')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('user')
+  async uploadText(
+    @Request() req,
+    @Body('folderId') folderId: string,
+    @Body('text') text: string,
+    @Body('title') title: string,
+  ) {
+    if (!text) {
+      console.error('No text available');
+      throw new BadRequestException('No text available');
+    }
+    if (!title) {
+      console.error('No title available');
+      throw new BadRequestException('No title available');
+    }
+    // Convert the text data into a readable stream (in-memory file)
+    // const textBuffer = Buffer.from(text, 'utf-8');
+    // const textStream = Readable.from(textBuffer);
+    writeTheFile(text,title)
+
+    return "Writtern";
+    // return this.fileService.uploadFiles(file, req.user.id, folderId);
   }
 
   @Delete('/:fileId')
@@ -114,6 +142,26 @@ export class FilesController {
       sortedby,
     });
   }
+  @Get('/analytics')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('user')
+  async getAnalytics(
+    @Request() req,
+    @Query('page') page: any,
+    @Query('limit') limit: any,
+  ) {
+    let folderObjectId: mongoose.Types.ObjectId | undefined;
+    if (page || limit) {
+      page = parseFloat(page as string);
+      limit = parseFloat(limit as string);
+    }
+
+    return this.fileStorage.storageAnalytics({
+      userId: req.user.id,
+      limit,
+      page,
+    });
+  }
   @Get('/category')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('user')
@@ -134,7 +182,7 @@ export class FilesController {
       name,
       page,
       limit,
-      type
+      type,
       // date,
       // enddate,
       // sort,
