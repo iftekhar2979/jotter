@@ -1,6 +1,5 @@
 import * as AWS from 'aws-sdk';
 import * as multerS3 from 'multer-s3';
-import crypto from 'crypto'
 import { ConfigService } from '@nestjs/config';
 
 const configService = new ConfigService();

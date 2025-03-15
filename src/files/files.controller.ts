@@ -2,7 +2,7 @@ import { Test } from '@nestjs/testing';
 import { Type } from 'class-transformer';
 import mongoose, { ObjectId, Types } from 'mongoose';
 import { multerConfig, multerS3Config } from 'src/common/multer/multer.config';
-import fs from 'fs'
+import fs from 'fs';
 import {
   BadRequestException,
   Body,
@@ -92,9 +92,9 @@ export class FilesController {
     // Convert the text data into a readable stream (in-memory file)
     // const textBuffer = Buffer.from(text, 'utf-8');
     // const textStream = Readable.from(textBuffer);
-    writeTheFile(text,title)
+    writeTheFile(text, title);
 
-    return "Writtern";
+    return 'Writtern';
     // return this.fileService.uploadFiles(file, req.user.id, folderId);
   }
 
@@ -162,6 +162,25 @@ export class FilesController {
       page,
     });
   }
+  @Get('/recents')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('user')
+  async getRecentsFile(
+    @Request() req,
+    @Query('page') page: any,
+    @Query('limit') limit: any,
+  ) {
+    if (page || limit) {
+      page = parseFloat(page as string);
+      limit = parseFloat(limit as string);
+    }
+
+    return this.fileStorage.getRecentFiles({
+      userId: req.user.id,
+      limit,
+      page,
+    });
+  }
   @Get('/category')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('user')
@@ -183,10 +202,6 @@ export class FilesController {
       page,
       limit,
       type,
-      // date,
-      // enddate,
-      // sort,
-      // sortedby,
     });
   }
 }

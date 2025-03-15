@@ -104,7 +104,7 @@ export class FileStorage {
     limit: number;
     page: number;
   }) {
-    let analyticsPipline = [
+    let analyticsPipeline :any=  [
       {
         $match: {
           userId: new mongoose.Types.ObjectId(userId),
@@ -134,7 +134,7 @@ export class FileStorage {
               default: 'other', // Files that don't match the above will be grouped under "other"
             },
           },
-          size: { $ifNull: ['$size', 0] }, 
+          size: { $ifNull: ['$size', 0] },
         },
       },
       {
@@ -144,16 +144,72 @@ export class FileStorage {
           size: { $sum: '$size' },
         },
       },
+      {
+        $addFields: {
+          // Ensure that we have exactly the three categories, with zero counts if not present
+          categories: ['image', 'pdf', 'text'],
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          category: '$_id',
+          totalItems: 1,
+          size: 1,
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          categories: { $push: '$$ROOT' },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          categories: {
+            $map: {
+              input: '$categories',
+              as: 'category',
+              in: {
+                $cond: {
+                  if: { $in: ['$$category.category', ['image', 'pdf', 'text']] },
+                  then: '$$category',
+                  else: {
+                    category: 'other',
+                    totalItems: 0,
+                    size: 0,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          result: {
+            $arrayToObject: {
+              $map: {
+                input: '$categories',
+                as: 'category',
+                in: [
+                  '$$category.category', // key
+                  {
+                    totalItems: '$$category.totalItems',
+                    size: '$$category.size',
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
     ];
-    const information = this.fileModel.aggregate(analyticsPipline);
-    const recentUploads = this.fileModel
-      .find({ userId: new mongoose.Types.ObjectId(userId) })
-      .sort({ createdAt: -1 })
-      .limit(limit)
-      .skip((page - 1) * limit);
-    const [recent, analytics, totalItems, storageInformation] =
+    
+    const information = this.fileModel.aggregate(analyticsPipeline);
+    const [ analytics, totalItems, storageInformation] =
       await Promise.all([
-        recentUploads,
         information,
         this.fileModel.countDocuments({
           userId: new mongoose.Types.ObjectId(userId),
@@ -163,15 +219,35 @@ export class FileStorage {
     return {
       message: 'Analytics Retrived Successfully',
       data: {
-        recent,
-        analytics: analytics.map((item) => {
-          return {
-            ...item,
-            size: parseFloat((item.size / (1024 * 1024)).toFixed(2)),
-          };
-        }),
+        analytics: analytics[0].result,
         storageInformation,
       },
+      pagination: pagination(limit, page, totalItems),
+    };
+  }
+  async getRecentFiles({
+    userId,
+    limit = 10,
+    page = 1,
+  }: {
+    userId: string;
+    limit: number;
+    page: number;
+  }) {
+    const recentUploads = this.fileModel
+      .find({ userId: new mongoose.Types.ObjectId(userId) })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .skip((page - 1) * limit);
+    const [recent, totalItems] = await Promise.all([
+      recentUploads,
+      this.fileModel.countDocuments({
+        userId: new mongoose.Types.ObjectId(userId),
+      }),
+    ]);
+    return {
+      message: 'Recents Retrived Successfully',
+      data: recent,
       pagination: pagination(limit, page, totalItems),
     };
   }

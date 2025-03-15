@@ -174,7 +174,7 @@ export class FileService {
     if (folder) {
       matchQuery.parentFolderId = folder.toString();
     } else {
-      matchQuery.parentFolderId = null; // Fetch root-level folders
+      matchQuery.parentFolderId =  ""; // Fetch root-level folders
     }
     if (name) {
       matchQuery.name = { $regex: new RegExp(name, 'i') }; // Case-insensitive search
@@ -189,7 +189,7 @@ export class FileService {
     //   endDate.setHours(23, 59, 59, 999);
     //   matchQuery.createdAt = { $gte: endDate };
     // }
-    console.log(userId, folder);
+    console.log(matchQuery);
     const aggregationPipeline: any = [
       {
         $match: matchQuery, // Match folders
@@ -207,6 +207,13 @@ export class FileService {
                   : {}),
               },
             },
+            // {
+            //   $lookup:{
+            //     from:"favourites",
+            //     localField:"_id",
+            //     foreignField:
+            //   }
+            // }
           ],
         },
       },
