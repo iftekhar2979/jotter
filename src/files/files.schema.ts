@@ -21,6 +21,8 @@ export class Files extends Document {
     default:null
   })
   folder: ObjectId;
+  @Prop({default:'', type: String })
+  recognizedText: string;
 }
 export const FileSchema = SchemaFactory.createForClass(Files);
 @Schema({ timestamps: true })

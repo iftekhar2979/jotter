@@ -69,13 +69,13 @@ export const multerS3Config = multerS3({
   bucket: configService.get<string>('AWS_S3_BUCKET_NAME') || 'jotter',
   acl: 'private',
   metadata: (req, file, callback) => {
-    console.log("📂 Metadata received:", req);
-    callback(null, { fieldName: file.fieldname });
+    // console.log("📂 Metadata received:", req);
+    callback(null, { fieldName: file.fieldname  });
   },
   key: (req, file, callback) => {
-    console.log("Body data",req.body)
+    // console.log("Body data",req.body)
     const uniqueFileName = `${Date.now()}-${file.originalname}`;
-    console.log("📂 File being saved as:", uniqueFileName);
+    // console.log("📂 File being saved as:", uniqueFileName);
     callback(null, uniqueFileName);
   },
 });

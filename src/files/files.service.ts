@@ -14,6 +14,8 @@ import { FolderService } from 'src/folder/folder.service';
 import { Folder } from 'src/folder/folder.schema';
 import { pagination } from 'src/common/pagination/pagination';
 import { Storage } from 'src/users/users.schema';
+import { OcrService } from 'src/ocr/ocr.service';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class FileService {
@@ -22,6 +24,8 @@ export class FileService {
     @InjectModel(Folder.name) private readonly folderModel: Model<Folder>,
     @InjectModel(Storage.name) private readonly storageModel: Model<Storage>,
     private folderService: FolderService,
+    private ocrService: OcrService,
+    private configService: ConfigService,
   ) {}
 
   getFile(fileId) {
@@ -85,14 +89,32 @@ export class FileService {
     if (!files || files.length === 0)
       throw new BadRequestException('No files uploaded');
 
-    const fileDocuments = files.map((file) => ({
-      userId,
-      fileName: file.originalname,
-      size: file.size,
-      url: file.location.split('/').slice(3, 5).join('/'),
-      mimetype: file.mimetype,
-      folder: folderId,
-    }));
+    const fileDocuments = await Promise.all(
+      files.map(async (file) => {
+        // const fileBuffer = file.buffer;
+        console.log('From Controller', file);
+        let recognizedText = '';
+        if (file.mimetype.includes('image')) {
+          recognizedText = await this.ocrService.performOcr(
+            `${this.configService.get<string>(
+              'AWS_ENDPOINT',
+            )}/${this.configService.get<string>('AWS_S3_BUCKET_NAME')}/${file.key}`,
+          );
+        }
+        console.log(recognizedText)
+        return {
+          userId,
+          fileName: file.originalname,
+          size: file.size,
+          url: file.location.split('/').slice(3, 5).join('/'),
+          mimetype: file.mimetype,
+          folder: folderId,
+          recognizedText:recognizedText.replace(/[\n\r]+/g, ' '),
+        };
+      }),
+    );
+
+    console.log('Document', fileDocuments);
 
     if (folderId) {
       const folderExist = await this.folderModel.findById(folderId);
@@ -173,7 +195,7 @@ export class FileService {
       matchQuery.parentFolderId = ''; // Fetch root-level folders
     }
     if (name) {
-      matchQuery.name = { $regex: new RegExp(name, 'i') }; // Case-insensitive search
+      matchQuery.name = { $regex: new RegExp(name, 'i') };
     }
     if (date) {
       const endDate = new Date(date);
@@ -199,7 +221,16 @@ export class FileService {
                 userId: userId,
                 folder: folder || null,
                 ...(name
-                  ? { fileName: { $regex: new RegExp(name, 'i') } }
+                  ? {$or: [
+                    {
+                      fileName: { $regex: new RegExp(name, 'i') },
+                    },
+                    {
+                      recognizedText: {
+                        $regex: new RegExp(name.replace(/[\n\r]+/g, ' ').trim(), 'i'), // Remove newlines and extra spaces
+                      },
+                    },
+                  ]}
                   : {}),
               },
             },
@@ -255,7 +286,16 @@ export class FileService {
                 userId: userId,
                 folder: folder || null,
                 ...(name
-                  ? { fileName: { $regex: new RegExp(name, 'i') } }
+                  ? {$or: [
+                    {
+                      fileName: { $regex: new RegExp(name, 'i') },
+                    },
+                    {
+                      recognizedText: {
+                        $regex: new RegExp(name.replace(/[\n\r]+/g, ' ').trim(), 'i'), // Remove newlines and extra spaces
+                      },
+                    },
+                  ]}
                   : {}),
               },
             },
@@ -286,16 +326,15 @@ export class FileService {
     title: string;
     userId: string;
     size: number;
-    folderId
+    folderId;
   }) {
-    
     const newFile = new this.fileModel({
       userId,
       fileName: title,
       size: size,
       url: `jotter/${title}`,
       mimetype: 'text/plain',
-      folder:folderId ? new mongoose.Types.ObjectId(folderId) : null
+      folder: folderId ? new mongoose.Types.ObjectId(folderId) : null,
     });
 
     await newFile.save();
