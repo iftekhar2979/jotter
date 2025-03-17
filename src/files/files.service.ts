@@ -55,11 +55,7 @@ export class FileService {
       new: true,
     });
   }
-  getStorageInfo({
-    userId,
-  }: {
-    userId: string;
-  }) {
+  getStorageInfo({ userId }: { userId: string }) {
     return this.storageModel.findOne({ userId }, { used: 1, total: 1 });
   }
 
@@ -174,7 +170,7 @@ export class FileService {
     if (folder) {
       matchQuery.parentFolderId = folder.toString();
     } else {
-      matchQuery.parentFolderId =  ""; // Fetch root-level folders
+      matchQuery.parentFolderId = ''; // Fetch root-level folders
     }
     if (name) {
       matchQuery.name = { $regex: new RegExp(name, 'i') }; // Case-insensitive search
@@ -278,6 +274,34 @@ export class FileService {
       message: 'folder retrived successfully',
       data: result,
       pagination: pagination(limit, page, total[0].totalCount),
+    };
+  }
+
+  async uploadText({
+    title,
+    userId,
+    size = 0,
+    folderId = null,
+  }: {
+    title: string;
+    userId: string;
+    size: number;
+    folderId
+  }) {
+    
+    const newFile = new this.fileModel({
+      userId,
+      fileName: title,
+      size: size,
+      url: `jotter/${title}`,
+      mimetype: 'text/plain',
+      folder:folderId ? new mongoose.Types.ObjectId(folderId) : null
+    });
+
+    await newFile.save();
+    return {
+      message: 'File saved!',
+      data: newFile,
     };
   }
 }

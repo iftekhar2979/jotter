@@ -26,17 +26,15 @@ import { RolesGuard } from 'src/auth/guard/role-gurad';
 import { Roles } from 'src/common/custom-decorator/role.decorator';
 import { FileService } from './files.service';
 import { FileStorage } from './services/file.storage.service';
-import { text } from 'stream/consumers';
-import { Readable } from 'stream';
 import { writeTheFile } from 'src/common/utils/writetext';
-//   import { AwsS3StorageProvider } from '../storage/aws-s3-storage.provider';
-
+import { OcrService } from 'src/ocr/ocr.service';
 @Controller('files')
 export class FilesController {
   constructor(
     private readonly s3Provider: AwsS3StorageProvider,
     private readonly fileService: FileService,
     private readonly fileStorage: FileStorage,
+  private readonly ocrService:OcrService
   ) {}
 
   @Patch('/rename/:fileId')
@@ -70,6 +68,7 @@ export class FilesController {
       console.error('❌ File upload failed - file is undefined');
       throw new BadRequestException('File Upload Failed');
     }
+    // const data= await this.ocrService.performOcr(file.destination)
     return this.fileService.uploadFiles(file, req.user.id, folderId);
   }
   @Post('text')
@@ -89,15 +88,9 @@ export class FilesController {
       console.error('No title available');
       throw new BadRequestException('No title available');
     }
-    // Convert the text data into a readable stream (in-memory file)
-    // const textBuffer = Buffer.from(text, 'utf-8');
-    // const textStream = Readable.from(textBuffer);
-    writeTheFile(text, title);
-
-    return 'Writtern';
-    // return this.fileService.uploadFiles(file, req.user.id, folderId);
+  const stream = await writeTheFile(text, title);
+  return  this.fileService.uploadText({ title, userId: req.user.id, size:stream.fileSize, folderId });
   }
-
   @Delete('/:fileId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('user')
@@ -195,7 +188,6 @@ export class FilesController {
       page = parseFloat(page as string);
       limit = parseFloat(limit as string);
     }
-
     return this.fileStorage.filterFile({
       userId: new mongoose.Types.ObjectId(req.user.id) as unknown as ObjectId,
       name,

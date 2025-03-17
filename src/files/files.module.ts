@@ -12,6 +12,7 @@ import { FolderModule } from 'src/folder/folder.module';
 import { Folder, FolderSchema } from 'src/folder/folder.schema';
 import { Storage, StorageSchema } from 'src/users/users.schema';
 import { FileStorage } from './services/file.storage.service';
+import { OcrService } from 'src/ocr/ocr.service';
 
 @Module({
   imports: [
@@ -32,7 +33,7 @@ import { FileStorage } from './services/file.storage.service';
     FolderModule,
   ], // Ensure ConfigModule is imported
   controllers: [FilesController],
-  providers: [AwsS3StorageProvider, FileService, FileStorage], // Register the provider
+  providers: [AwsS3StorageProvider, FileService, FileStorage,OcrService], // Register the provider
   exports: [AwsS3StorageProvider, FileService, FileStorage], // Export it if used in another module
 })
 export class FilesModule {}

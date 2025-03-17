@@ -19,6 +19,9 @@ import { StorageModule } from './storage/storage.module';
 import { MetaModule } from './meta/meta.module';
 import { FavouriteModule } from './favourite/favourite.module';
 // import { FavourtieController } from './favourtie/favourtie.controller';
+import { OcrService } from './ocr/ocr.service';
+// import { OcrController } from './ocr/ocr.controller';
+import { OcrModule } from './ocr/ocr.module';
 
 @Module({
   imports:  [
@@ -36,15 +39,17 @@ import { FavouriteModule } from './favourite/favourite.module';
     FilesModule,
     StorageModule,
     MetaModule,
-    FavouriteModule
+    FavouriteModule,
+    OcrModule
   ],
-  controllers: [AppController, ChatController],
+  controllers: [AppController, ChatController,],
   providers: [
     {
       provide: APP_FILTER,
       useClass: ValidationExceptionFilter,
     },
     AppService,
+    OcrService,
     // MinioService,
   ],
 })
