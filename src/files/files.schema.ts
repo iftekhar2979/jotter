@@ -18,10 +18,10 @@ export class Files extends Document {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Folder',
     index: true,
-    default:null
+    default: null,
   })
   folder: ObjectId;
-  @Prop({default:'', type: String })
+  @Prop({ default: '', type: String })
   recognizedText: string;
 }
 export const FileSchema = SchemaFactory.createForClass(Files);
