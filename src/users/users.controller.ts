@@ -17,6 +17,7 @@ import {
   UseInterceptors,
   UploadedFile,
   Request,
+  Patch,
 } from '@nestjs/common';
 import { UserService } from './users.service';
 import { IUser } from './users.interface';
@@ -27,11 +28,16 @@ import { Roles } from 'src/common/custom-decorator/role.decorator';
 import { RolesGuard } from 'src/auth/guard/role-gurad';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { multerConfig } from 'src/common/multer/multer.config';
-
+import { PinService } from './users.pin.service';
+import { checkPassword, CreatePin } from './dto/pin.dto';
+// import { PinService } from 'src/pin/pin.service';
 
 @Controller('users')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly pinService: PinService,
+  ) {}
   @Post()
   async create(@Body() createUserDto: CreateUserDto) {
     return this.userService.create(createUserDto);
@@ -67,13 +73,39 @@ export class UserController {
     return this.userService.delete(id);
   }
 
-   @Post("profile-picture")
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles('user')
-    @UseInterceptors(FileInterceptor('file', multerConfig))
-    imagesUpload(@Request() req, @UploadedFile() file: Express.Multer.File) {
-    
-      let user = req.user; // Assuming user info is in the request
-      return this.userService.uploadProfilePicture(user, file);
-    }
+  @Post('profile-picture')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('user')
+  @UseInterceptors(FileInterceptor('file', multerConfig))
+  imagesUpload(@Request() req, @UploadedFile() file: Express.Multer.File) {
+    let user = req.user; // Assuming user info is in the request
+    return this.userService.uploadProfilePicture(user, file);
+  }
+  @Patch('pin')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('user')
+  createPin(@Request() req, @Body() CreatePin: CreatePin) {
+    return this.pinService.createPin({
+      pin: CreatePin.pin,
+      userInfo: req.user,
+    });
+  }
+  @Post('pin')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('user')
+  checkPin(@Request() req, @Body() CreatePin: CreatePin) {
+    return this.pinService.checkPin({
+      pin: CreatePin.pin,
+      userId: req.user.id,
+    });
+  }
+  @Post('pin/forgot')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('user')
+  forgetPin(@Request() req, @Body() checkPassword: checkPassword) {
+    return this.pinService.forgotPin({
+      password: checkPassword.password,
+      user: req.user,
+    });
+  }
 }

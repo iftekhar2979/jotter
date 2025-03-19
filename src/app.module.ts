@@ -22,6 +22,7 @@ import { FavouriteModule } from './favourite/favourite.module';
 import { OcrService } from './ocr/ocr.service';
 // import { OcrController } from './ocr/ocr.controller';
 import { OcrModule } from './ocr/ocr.module';
+import { PinModule } from './pin/pin.module';
 
 @Module({
   imports:  [
@@ -40,7 +41,8 @@ import { OcrModule } from './ocr/ocr.module';
     StorageModule,
     MetaModule,
     FavouriteModule,
-    OcrModule
+    OcrModule,
+    PinModule
   ],
   controllers: [AppController, ChatController,],
   providers: [

@@ -85,6 +85,7 @@ export class AuthService {
       id: newUser._id,
       role: newUser.role,
       name: newUser.name,
+      pin: 'unchecked',
     };
     const token = this.jwtService.sign(payload);
     let savedUser = await newUser.save();
@@ -136,6 +137,7 @@ export class AuthService {
         const payload = {
           id: user._id,
           tokenFor: 'email-verification',
+          pin: 'unchecked',
         };
         const token = this.jwtService.sign(payload);
         throw new UnauthorizedException({
@@ -158,6 +160,7 @@ export class AuthService {
       const payload = {
         id: user._id,
         tokenFor: 'email-verification',
+        pin: 'unchecked',
       };
       const token = this.jwtService.sign(payload);
       throw new UnauthorizedException({
@@ -175,6 +178,7 @@ export class AuthService {
       role: user.role,
       name: user.name,
       tokenFor: 'auth',
+      pin:'unchecked'
     };
     const token = this.jwtService.sign(payload);
     return { message: 'Logged In Successfully', data: user, token };
@@ -217,6 +221,7 @@ export class AuthService {
         email: user.email,
         role: user.role,
         tokenFor: 'forget-password',
+        pin: 'unchecked',
       };
     } else {
       payload = {
@@ -225,6 +230,7 @@ export class AuthService {
         name: user.name,
         role: user.role,
         tokenFor: 'email-verification',
+        pin: 'unchecked',
       };
     }
 
@@ -344,6 +350,7 @@ export class AuthService {
         email: user.email,
         role: user.role,
         tokenFor: 'forget-password',
+        pin: 'unchecked',
       };
       const token = this.jwtService.sign(payload, { expiresIn: '3600s' });
       return { message: 'OTP sent successfully', data: {}, token };

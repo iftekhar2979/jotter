@@ -28,6 +28,11 @@ export class User extends Document {
   profilePicture: string | null;
   @Prop({ default: false })
   isDeleted: boolean;
+  @Prop({ type: String, default: null })
+  pin: string;
+  @Prop({ type: Number, default: 0 })
+  pinAttempts: number;
+  updatedAt: Date; 
 }
 
 // Create the schema and apply pre-save hook outside the class

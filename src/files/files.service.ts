@@ -109,7 +109,7 @@ export class FileService {
           url: file.location.split('/').slice(3, 5).join('/'),
           mimetype: file.mimetype,
           folder: folderId,
-          recognizedText:recognizedText.replace(/[\n\r]+/g, ' '),
+          recognizedText,
         };
       }),
     );

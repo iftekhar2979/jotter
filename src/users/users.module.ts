@@ -5,18 +5,19 @@ import { User, UserSchema } from './users.schema';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtModule } from '@nestjs/jwt';
 import { Reflector } from '@nestjs/core';
+import { PinService } from './users.pin.service';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
     JwtModule.register({
-      secret: 'yourSecretKey', // You should move this to a config file or env variables
-      signOptions: { expiresIn: '30d' }, // Token expiration time
+      secret: 'yourSecretKey',
+      signOptions: { expiresIn: '30d' }, 
     }),
-    Reflector,  // Register Reflector for metadata reflection
+    Reflector, 
   ],
   controllers: [UserController],
-  providers: [UserService],
+  providers: [UserService, PinService],
   exports: [UserService],
 })
 export class UsersModule {}
