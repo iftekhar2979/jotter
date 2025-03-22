@@ -21,13 +21,14 @@ export class LockService {
         fileId: new mongoose.Types.ObjectId(fileId),
         userId: new mongoose.Types.ObjectId(userId),
       });
+      return { message: 'File unlocked !', data: {} };
     } else {
       await this.lockModel.create({
         fileId: new mongoose.Types.ObjectId(fileId),
         userId: new mongoose.Types.ObjectId(userId),
       });
+      return { message: 'File locked !', data: {} };
     }
-    return { message: 'File locked !', data: {} };
   }
   async getFiles({
     userId,
@@ -69,11 +70,22 @@ export class LockService {
         $skip: (page - 1) * limit,
       },
       {
-        $limit: limit, 
+        $limit: limit,
       },
       {
         $project: {
-          files: '$files',
+          _id: 1,
+          userId: 1,
+          fileId: '$files._id',
+          fileName: '$files.fileName',
+          size: '$files.size',
+          url: '$files.url',
+          mimetype: '$files.mimetype',
+          folder: '$files.folder',
+          __v: '$files.__v',
+          createdAt: '$files.createdAt',
+          updatedAt: '$files.updatedAt',
+          recognizedText: '$files.recognizedText',
         },
       },
     ];
@@ -111,12 +123,14 @@ export class LockService {
       this.lockModel.aggregate(pipline),
       this.lockModel.aggregate(countPipeline),
     ]);
+    console.log(count);
     if (count.length === 0) {
       throw new HttpException('No file found!', 404);
     }
+    console.log(file);
     return {
-      message: 'File locked !',
-      data: file[0],
+      message: 'Files fetched successfully',
+      data: file,
       pagination: pagination(limit, page, count[0].count),
     };
   }

@@ -12,6 +12,7 @@ import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guard/role-gurad';
 import { Roles } from 'src/common/custom-decorator/role.decorator';
 import { LockFileDto } from './lock.dto';
+import { PinGuard } from 'src/auth/guard/check-pin';
 
 @Controller('lock')
 export class PinController {
@@ -26,22 +27,22 @@ export class PinController {
     });
   }
   @Get('')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, PinGuard)
   @Roles('user')
   getLocks(
     @Request() req,
     @Query()
-    { term, page, limit }: { term?: string; page:any; limit:any },
+    { term, page, limit }: { term?: string; page: any; limit: any },
   ) {
     if (page || limit) {
-        page = parseFloat(page as string);
-        limit = parseFloat(limit as string);
-      }
+      page = parseFloat(page as string);
+      limit = parseFloat(limit as string);
+    }
     return this.lockService.getFiles({
       userId: req.user.id,
       page,
       searchTerm: term,
-      limit
+      limit,
     });
   }
 }

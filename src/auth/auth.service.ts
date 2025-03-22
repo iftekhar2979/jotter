@@ -117,8 +117,6 @@ export class AuthService {
   }
 
   async find(authDto) {
-    console.log(authDto);
-
     let user = await this.userModel.findOne({ email: authDto.email });
     if (!user) {
       throw new BadRequestException('User not Found!');
@@ -178,7 +176,7 @@ export class AuthService {
       role: user.role,
       name: user.name,
       tokenFor: 'auth',
-      pin:'unchecked'
+      pin: user?.pin ? 'unchecked' : 'not-set',
     };
     const token = this.jwtService.sign(payload);
     return { message: 'Logged In Successfully', data: user, token };

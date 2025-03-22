@@ -23,6 +23,9 @@ import { OcrService } from './ocr/ocr.service';
 // import { OcrController } from './ocr/ocr.controller';
 import { OcrModule } from './ocr/ocr.module';
 import { PinModule } from './pin/pin.module';
+import { SettingsModule } from './settings/settings.module';
+import { SeedModule } from './seed/seed.module';
+import { SeederService } from './seed/seedService';
 
 @Module({
   imports:  [
@@ -42,7 +45,9 @@ import { PinModule } from './pin/pin.module';
     MetaModule,
     FavouriteModule,
     OcrModule,
-    PinModule
+    PinModule,
+    SettingsModule,
+    SeedModule
   ],
   controllers: [AppController, ChatController,],
   providers: [
@@ -52,6 +57,8 @@ import { PinModule } from './pin/pin.module';
     },
     AppService,
     OcrService,
+    
+    SeederService,
     // MinioService,
   ],
 })

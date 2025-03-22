@@ -4,6 +4,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Files } from '../files.schema';
 import mongoose, { Model, ObjectId } from 'mongoose';
 import { pagination } from 'src/common/pagination/pagination';
+import { Favourite } from 'src/favourite/favourite.schema';
 
 export class FileStorage {
   constructor(
@@ -48,21 +49,77 @@ export class FileStorage {
     let query: any = {
       userId,
     };
-
-    // Only apply regex filters if `name` or `type` is provided
     if (name) {
       query.fileName = { $regex: name, $options: 'i' };
     }
-
     if (type) {
       query.mimetype = { $regex: type, $options: 'i' };
     }
-
-    // Log the query to debug
-    console.log(query);
-
     const file = await this.fileModel
-      .find(query)
+      .aggregate([
+        {
+          $match: query,
+        },
+        {
+          $lookup: {
+            from: 'favourites',
+            localField: '_id',
+            foreignField: 'fileId',
+            as: 'favourite',
+            pipeline: [
+              {
+                $project: {
+                  id: 1,
+                },
+              },
+            ],
+          },
+        },
+        {
+          $lookup: {
+            from: 'locks',
+            localField: '_id',
+            foreignField: 'fileId',
+            as: 'locked',
+            pipeline: [
+              {
+                $project: {
+                  id: 1,
+                },
+              },
+            ],
+          },
+        },
+        {
+          $addFields: {
+            isFavourite: {
+              $cond: {
+                if: { $gt: [{ $size: '$favourite' }, 0] },
+                then: true,
+                else: false,
+              },
+            },
+            isLocked: {
+              $cond: {
+                if: { $gt: [{ $size: '$locked' }, 0] },
+                then: true,
+                else: false,
+              },
+            },
+          },
+        },
+        {
+          $match: {
+            isLocked: false,
+          },
+        },
+        {
+          $project: {
+            favourite: 0,
+            locked: 0,
+          },
+        },
+      ])
       .skip(limit * (page - 1))
       .limit(limit);
 
@@ -104,7 +161,7 @@ export class FileStorage {
     limit: number;
     page: number;
   }) {
-    let analyticsPipeline :any=  [
+    let analyticsPipeline: any = [
       {
         $match: {
           userId: new mongoose.Types.ObjectId(userId),
@@ -173,7 +230,9 @@ export class FileStorage {
               as: 'category',
               in: {
                 $cond: {
-                  if: { $in: ['$$category.category', ['image', 'pdf', 'text']] },
+                  if: {
+                    $in: ['$$category.category', ['image', 'pdf', 'text']],
+                  },
                   then: '$$category',
                   else: {
                     category: 'other',
@@ -206,16 +265,15 @@ export class FileStorage {
         },
       },
     ];
-    
+
     const information = this.fileModel.aggregate(analyticsPipeline);
-    const [ analytics, totalItems, storageInformation] =
-      await Promise.all([
-        information,
-        this.fileModel.countDocuments({
-          userId: new mongoose.Types.ObjectId(userId),
-        }),
-        this.fileService.getStorageInfo({ userId }),
-      ]);
+    const [analytics, totalItems, storageInformation] = await Promise.all([
+      information,
+      this.fileModel.countDocuments({
+        userId: new mongoose.Types.ObjectId(userId),
+      }),
+      this.fileService.getStorageInfo({ userId }),
+    ]);
     return {
       message: 'Analytics Retrived Successfully',
       data: {
@@ -235,7 +293,70 @@ export class FileStorage {
     page: number;
   }) {
     const recentUploads = this.fileModel
-      .find({ userId: new mongoose.Types.ObjectId(userId) })
+      .aggregate([
+        {
+          $match: { userId: new mongoose.Types.ObjectId(userId) },
+        },
+        {
+          $lookup: {
+            from: 'favourites',
+            localField: '_id',
+            foreignField: 'fileId',
+            as: 'favourite',
+            pipeline: [
+              {
+                $project: {
+                  id: 1,
+                },
+              },
+            ],
+          },
+        },
+        {
+          $lookup: {
+            from: 'locks',
+            localField: '_id',
+            foreignField: 'fileId',
+            as: 'locked',
+            pipeline: [
+              {
+                $project: {
+                  id: 1,
+                },
+              },
+            ],
+          },
+        },
+        {
+          $addFields: {
+            isFavourite: {
+              $cond: {
+                if: { $gt: [{ $size: '$favourite' }, 0] },
+                then: true,
+                else: false,
+              },
+            },
+            isLocked: {
+              $cond: {
+                if: { $gt: [{ $size: '$locked' }, 0] },
+                then: true,
+                else: false,
+              },
+            },
+          },
+        },
+        {
+          $match: {
+            isLocked: false,
+          },
+        },
+        {
+          $project: {
+            favourite: 0,
+            locked: 0,
+          },
+        },
+      ])
       .sort({ createdAt: -1 })
       .limit(limit)
       .skip((page - 1) * limit);
@@ -251,4 +372,42 @@ export class FileStorage {
       pagination: pagination(limit, page, totalItems),
     };
   }
+  async getFileFilterByMonth({
+    userId,
+    date,
+    limit = 10,
+    page = 1,
+  }: {
+    date: string;
+    userId: string;
+    limit: number;
+    page: number;
+  }) {
+    const startDate = new Date(date).getTime();
+    const endDate = new Date(startDate);
+    endDate.setMonth(endDate.getMonth() + 1);
+    const filesByMonth = this.fileModel
+      .find({
+        userId: new mongoose.Types.ObjectId(userId),
+        createdAt: { $gte: startDate, $lt: endDate },
+      })
+      .sort({ updatedAt: -1 })
+      .limit(limit)
+      .skip((page - 1) * limit);
+
+    const [files, totalItems] = await Promise.all([
+      filesByMonth,
+      this.fileModel.countDocuments({
+        userId: new mongoose.Types.ObjectId(userId),
+        createdAt: { $gte: startDate, $lt: endDate },
+      }),
+    ]);
+
+    return {
+      message: 'Files filtered by month retrieved successfully',
+      data: files,
+      pagination: pagination(limit, page, totalItems),
+    };
+  }
+  
 }

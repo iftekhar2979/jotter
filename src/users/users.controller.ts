@@ -38,6 +38,21 @@ export class UserController {
     private readonly userService: UserService,
     private readonly pinService: PinService,
   ) {}
+  @Get('me')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('user', 'admin')
+  async accountInfoMe(@Request() req: any) {
+    let id = req.user.id;
+    console.log(req.user);
+    return await this.userService.findOne(id);
+  }
+  @Patch('me')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('user', 'admin')
+  async updateUserInfo(@Request() req: any) {
+    let id = req.user.id;
+    return await this.userService.update(id, req.body);
+  }
   @Post()
   async create(@Body() createUserDto: CreateUserDto) {
     return this.userService.create(createUserDto);

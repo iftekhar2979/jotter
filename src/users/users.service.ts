@@ -55,17 +55,19 @@ export class UserService {
     return { data, pagination: pagination(limit, page, total) };
   }
   // Find a user by ID
-  async findOne(id: string): Promise<User> {
-    return this.userModel.findById(id).select('-password').exec();
+   findOne(id: string) {
+    return this.userModel.findById(id,{pin:0,pinAttempts:0,isDeleted:0,isEmailVerified:0,profileID:0,}).select('-password').exec();
   }
 
   // Update a user by ID
   async update(id: string, updateUserDto: IUser): Promise<User> {
     return this.userModel
-      .findByIdAndUpdate(id, updateUserDto, { new: true })
+      .findByIdAndUpdate(id, updateUserDto, { new: true }).select('-password -pin -pinAttempts -isDeleted -isEmailVerified -profileID')
       .exec();
   }
-
+  async findByEmail(email: string): Promise<User | null> {
+    return this.userModel.findOne({ email }).exec();
+  }
   // Delete a user by ID
   async delete(id: string): Promise<any> {
     return this.userModel.findByIdAndDelete(id).exec();

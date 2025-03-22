@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ForbiddenException,
+  HttpException,
   Injectable,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -31,6 +32,7 @@ export class PinService {
         tokenFor: 'auth',
         pin: 'checked',
       };
+      console.log(payload);
       const token = this.jwtService.sign(payload);
       return { message: 'Pin changed successfully', data: {}, token };
     }
@@ -41,14 +43,14 @@ export class PinService {
     await user.save();
     const payload = {
       email: user.email,
-      id: user._id,
+      id: userInfo.id,
       role: user.role,
       name: user.name,
       tokenFor: 'auth',
       pin: 'unchecked',
     };
     const token = this.jwtService.sign(payload);
-    return { message: 'Pin created successfully', data: {}, token };
+    return { message: 'Pin set successfully', data: {}, token };
   }
   async checkPin({ pin, userId }: { pin: string; userId: string }) {
     const user = await this.userModel.findOne({
@@ -65,6 +67,9 @@ export class PinService {
           }
         }
       }
+    }
+    if (!user.pin) {
+      throw new HttpException('Pin Not Found', 404);
     }
     if (user.pin !== pin) {
       user.pinAttempts += 1;
@@ -94,7 +99,7 @@ export class PinService {
     }
     const payload = {
       email: user.email,
-      id: user._id,
+      id: userInfo._id,
       role: user.role,
       name: user.name,
       tokenFor: 'auth',

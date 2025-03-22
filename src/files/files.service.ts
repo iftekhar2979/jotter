@@ -16,6 +16,7 @@ import { pagination } from 'src/common/pagination/pagination';
 import { Storage } from 'src/users/users.schema';
 import { OcrService } from 'src/ocr/ocr.service';
 import { ConfigService } from '@nestjs/config';
+import { pipeline } from 'stream';
 
 @Injectable()
 export class FileService {
@@ -101,7 +102,7 @@ export class FileService {
             )}/${this.configService.get<string>('AWS_S3_BUCKET_NAME')}/${file.key}`,
           );
         }
-        console.log(recognizedText)
+        console.log(recognizedText);
         return {
           userId,
           fileName: file.originalname,
@@ -207,7 +208,7 @@ export class FileService {
     //   endDate.setHours(23, 59, 59, 999);
     //   matchQuery.createdAt = { $gte: endDate };
     // }
-    console.log(matchQuery);
+
     const aggregationPipeline: any = [
       {
         $match: matchQuery, // Match folders
@@ -221,26 +222,77 @@ export class FileService {
                 userId: userId,
                 folder: folder || null,
                 ...(name
-                  ? {$or: [
-                    {
-                      fileName: { $regex: new RegExp(name, 'i') },
-                    },
-                    {
-                      recognizedText: {
-                        $regex: new RegExp(name.replace(/[\n\r]+/g, ' ').trim(), 'i'), // Remove newlines and extra spaces
-                      },
-                    },
-                  ]}
+                  ? {
+                      $or: [
+                        {
+                          fileName: { $regex: new RegExp(name, 'i') },
+                        },
+                        {
+                          recognizedText: {
+                            $regex: new RegExp(
+                              name.replace(/[\n\r]+/g, ' ').trim(),
+                              'i',
+                            ), // Remove newlines and extra spaces
+                          },
+                        },
+                      ],
+                    }
                   : {}),
               },
             },
-            // {
-            //   $lookup:{
-            //     from:"favourites",
-            //     localField:"_id",
-            //     foreignField:
-            //   }
-            // }
+            {
+              $lookup: {
+                from: 'favourites',
+                localField: '_id',
+                foreignField: 'fileId',
+                as: 'favourite',
+                pipeline: [
+                  {
+                    $project: {
+                      id: 1,
+                    },
+                  },
+                ],
+              },
+            },
+            {
+              $lookup: {
+                from: 'locks',
+                localField: '_id',
+                foreignField: 'fileId',
+                as: 'locked',
+                pipeline: [
+                  {
+                    $project: {
+                      id: 1,
+                    },
+                  },
+                ],
+              },
+            },
+            {
+              $addFields: {
+                isFavourite: {
+                  $cond: {
+                    if: { $gt: [{ $size: '$favourite' }, 0] },
+                    then: true,
+                    else: false,
+                  },
+                },
+                isLocked: {
+                  $cond: {
+                    if: { $gt: [{ $size: '$locked' }, 0] },
+                    then: true,
+                    else: false,
+                  },
+                },
+              },
+            },
+            {
+              $match: {
+                $or: [{ isLocked: false }, { isLocked: { $exists: false } }],
+              },
+            },
           ],
         },
       },
@@ -252,6 +304,11 @@ export class FileService {
       },
       {
         $limit: limit,
+      },
+      {
+        $project: {
+          favourite: 0,
+        },
       },
     ];
 
@@ -286,16 +343,21 @@ export class FileService {
                 userId: userId,
                 folder: folder || null,
                 ...(name
-                  ? {$or: [
-                    {
-                      fileName: { $regex: new RegExp(name, 'i') },
-                    },
-                    {
-                      recognizedText: {
-                        $regex: new RegExp(name.replace(/[\n\r]+/g, ' ').trim(), 'i'), // Remove newlines and extra spaces
-                      },
-                    },
-                  ]}
+                  ? {
+                      $or: [
+                        {
+                          fileName: { $regex: new RegExp(name, 'i') },
+                        },
+                        {
+                          recognizedText: {
+                            $regex: new RegExp(
+                              name.replace(/[\n\r]+/g, ' ').trim(),
+                              'i',
+                            ), // Remove newlines and extra spaces
+                          },
+                        },
+                      ],
+                    }
                   : {}),
               },
             },
@@ -322,17 +384,34 @@ export class FileService {
     userId,
     size = 0,
     folderId = null,
+    fileId = '',
   }: {
     title: string;
     userId: string;
     size: number;
     folderId;
+    fileId?: string;
   }) {
+    if (fileId) {
+      const file = await this.fileModel.findById(fileId);
+      (file.fileName = title),
+        (file.size = size),
+        (file.url = `jotter/${new Date().getTime()}-${title}`);
+      (file.mimetype = 'text/plain'),
+        (file.folder = folderId
+          ? (new mongoose.Types.ObjectId(folderId) as unknown as ObjectId)
+          : null),
+        await file.save();
+      return {
+        message: 'File saved!',
+        data: file,
+      };
+    }
     const newFile = new this.fileModel({
       userId,
       fileName: title,
       size: size,
-      url: `jotter/${title}`,
+      url: `jotter/${new Date().getTime()}-${title}`,
       mimetype: 'text/plain',
       folder: folderId ? new mongoose.Types.ObjectId(folderId) : null,
     });

@@ -8,6 +8,7 @@ import { MongoDuplicateKeyExceptionFilter } from './common/filters/duplicateFilt
 import { UnauthorizedExceptionFilter } from './common/filters/unAuthorizedExectionError';
 import { join } from 'path';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { SeederService } from './seed/seedService';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -18,6 +19,8 @@ async function bootstrap() {
       forbidNonWhitelisted: true, // Throws error if unknown properties are passed
     }),
   );
+  const seederService = app.get(SeederService);
+  await seederService.seedData();
   app.useGlobalFilters(new MongoDuplicateKeyExceptionFilter());
   app.useGlobalFilters(new ValidationExceptionFilter());
   app.useGlobalFilters(new UnauthorizedExceptionFilter());
