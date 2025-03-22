@@ -384,42 +384,46 @@ export class FileService {
     userId,
     size = 0,
     folderId = null,
+    key = '',
     fileId = '',
   }: {
     title: string;
     userId: string;
     size: number;
     folderId;
+    key: string;
     fileId?: string;
   }) {
+    console.log(fileId);
     if (fileId) {
-      const file = await this.fileModel.findById(fileId);
-      (file.fileName = title),
-        (file.size = size),
-        (file.url = `jotter/${new Date().getTime()}-${title}`);
-      (file.mimetype = 'text/plain'),
-        (file.folder = folderId
-          ? (new mongoose.Types.ObjectId(folderId) as unknown as ObjectId)
-          : null),
-        await file.save();
+      const file = await this.fileModel.findByIdAndUpdate(fileId, {
+        userId,
+        fileName: title,
+        size: size,
+        url: `jotter/${key}`,
+        mimetype: 'text/plain',
+        folder: folderId ? new mongoose.Types.ObjectId(folderId) : null,
+      });
+
       return {
-        message: 'File saved!',
+        message: 'File updated!',
         data: file,
       };
-    }
-    const newFile = new this.fileModel({
-      userId,
-      fileName: title,
-      size: size,
-      url: `jotter/${new Date().getTime()}-${title}`,
-      mimetype: 'text/plain',
-      folder: folderId ? new mongoose.Types.ObjectId(folderId) : null,
-    });
+    } else {
+      const newFile = new this.fileModel({
+        userId,
+        fileName: title,
+        size: size,
+        url: `jotter/${key}`,
+        mimetype: 'text/plain',
+        folder: folderId ? new mongoose.Types.ObjectId(folderId) : null,
+      });
 
-    await newFile.save();
-    return {
-      message: 'File saved!',
-      data: newFile,
-    };
+      await newFile.save();
+      return {
+        message: 'File saved!',
+        data: newFile,
+      };
+    }
   }
 }

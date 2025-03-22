@@ -10,6 +10,7 @@ import { UsersModule } from 'src/users/users.module';
 import { LifestyleModule } from 'src/lifestyle/lifestyle.module';
 import { LifestyleService } from 'src/lifestyle/lifestyle.service';
 import { User, UserSchema } from 'src/users/users.schema';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -18,9 +19,13 @@ import { User, UserSchema } from 'src/users/users.schema';
       { name: User.name, schema: UserSchema },
     ]),
     LifestyleModule,
-    JwtModule.register({
-      secret: 'yourSecretKey', // You should move this to a config file or env variables
-      signOptions: { expiresIn: '30d' }, // Token expiration time
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),
+        signOptions: { expiresIn: '30d' },
+      }),
+      inject: [ConfigService],
     }),
     UsersModule,
   ],

@@ -7,15 +7,20 @@ import { ProfileModule } from 'src/profile/profile.module';
 import { JwtModule } from '@nestjs/jwt';
 import { UserService } from 'src/users/users.service';
 import { UsersModule } from 'src/users/users.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: LifeStyle.name, schema: LifeStyleSchema },
     ]),
-    JwtModule.register({
-      secret: 'yourSecretKey', // You should move this to a config file or env variables
-      signOptions: { expiresIn: '30d' }, // Token expiration time
+     JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),
+        signOptions: { expiresIn: '30d' },
+      }),
+      inject: [ConfigService],
     }),
     UsersModule
   ],

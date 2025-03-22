@@ -90,9 +90,10 @@ export class FilesController {
     }
     const stream = await writeTheFile(text, title);
     return this.fileService.uploadText({
-      title,
+      title: stream.title,
       userId: req.user.id,
       size: stream.fileSize,
+      key: stream.key,
       folderId,
     });
   }
@@ -121,10 +122,12 @@ export class FilesController {
       newTitle: title,
     });
     return this.fileService.uploadText({
-      title,
+      title: stream.title,
       userId: req.user.id,
       size: stream.fileSize,
+      key: stream.key,
       folderId,
+      fileId:id,
     });
   }
   @Delete('/:fileId')

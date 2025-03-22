@@ -3,7 +3,7 @@ import { PinController } from './pin.controller';
 import { LockService } from './pin.service';
 import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UsersModule } from 'src/users/users.module';
 import { Lock, LockSchema } from './pin.schema';
 import { FileSchema } from 'src/files/files.schema';
@@ -11,9 +11,13 @@ import { FileSchema } from 'src/files/files.schema';
 
 @Module({
   imports: [
-    JwtModule.register({
-      secret: 'yourSecretKey', // You should move this to a config file or env variables
-      signOptions: { expiresIn: '30d' }, // Token expiration time
+     JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),
+        signOptions: { expiresIn: '30d' },
+      }),
+      inject: [ConfigService],
     }),
     MongooseModule.forFeature([
       // { name: Pin.name, schema: FileSchema },

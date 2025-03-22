@@ -5,12 +5,17 @@ import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Folder, FolderSchema } from './folder.schema';
 import { UsersModule } from 'src/users/users.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
-    JwtModule.register({
-      secret: 'yourSecretKey', // You should move this to a config file or env variables
-      signOptions: { expiresIn: '30d' }, // Token expiration time
+     JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),
+        signOptions: { expiresIn: '30d' },
+      }),
+      inject: [ConfigService],
     }),
     MongooseModule.forFeature([{ name: Folder.name, schema: FolderSchema }]),
     UsersModule,

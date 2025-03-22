@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { FilesController } from './files.controller';
 // import { AwsS3StorageProvider } from '../aws-s3-storage.provider'; // Import the provider
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AwsS3StorageProvider } from 'src/storage/aws-s3-storage.provider.tsaws-s3-storage.provider';
 import { UsersModule } from 'src/users/users.module';
 import { JwtModule } from '@nestjs/jwt';
@@ -16,9 +16,13 @@ import { OcrService } from 'src/ocr/ocr.service';
 
 @Module({
   imports: [
-    JwtModule.register({
-      secret: 'yourSecretKey', // You should move this to a config file or env variables
-      signOptions: { expiresIn: '30d' }, // Token expiration time
+     JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),
+        signOptions: { expiresIn: '30d' },
+      }),
+      inject: [ConfigService],
     }),
     MongooseModule.forFeature([
       { name: Files.name, schema: FileSchema },
