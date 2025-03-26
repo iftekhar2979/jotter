@@ -53,8 +53,6 @@ export async function replaceExistingFile({
       .headObject({ Bucket: 'jotter', Key: existingTitle.split('/')[1] })
       .promise();
 
-    console.log('File exists:', fileExists);
-
     // If file exists, delete it before uploading the new one
     let del = await s3
       .deleteObject({ Bucket: params.Bucket, Key: params.Key })
@@ -71,7 +69,7 @@ export async function replaceExistingFile({
 
   const uploadParams = {
     Bucket: configService.get<string>('AWS_S3_BUCKET_NAME') || 'jotter',
-    Key: `${new Date().getTime()}-${newTitle}`,
+    Key: params.Key,
     Body: body,
   };
 

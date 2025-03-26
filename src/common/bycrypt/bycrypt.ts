@@ -5,7 +5,7 @@ export async function comparePassword(
   plainTextPassword: string,
   hashedPassword: string,
 ): Promise<boolean> {
-  return bcrypt.compare(plainTextPassword, hashedPassword);
+  return argon.verify(hashedPassword,plainTextPassword);
 }
 
 export async function comparePasswordWithArgon(

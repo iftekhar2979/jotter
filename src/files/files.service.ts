@@ -400,7 +400,7 @@ export class FileService {
         userId,
         fileName: title,
         size: size,
-        url: `jotter/${key}`,
+        url: `${key}`,
         mimetype: 'text/plain',
         folder: folderId ? new mongoose.Types.ObjectId(folderId) : null,
       });
@@ -414,7 +414,7 @@ export class FileService {
         userId,
         fileName: title,
         size: size,
-        url: `jotter/${key}`,
+        url: `${key}`,
         mimetype: 'text/plain',
         folder: folderId ? new mongoose.Types.ObjectId(folderId) : null,
       });
@@ -425,5 +425,56 @@ export class FileService {
         data: newFile,
       };
     }
+  }
+
+  async copyDocument({
+    fileId = [],
+    folderId = '',
+    userId,
+  }: {
+    fileId: string[];
+    folderId: string;
+    userId: string;
+  }) {
+    console.log(folderId);
+    // console.log(fileId, folderId, userId);
+    const files = await this.fileModel.find({ _id: { $in: fileId }, userId });
+    console.log(files);
+    if (!files) throw new NotFoundException('Files not found');
+    if (!folderId) {
+      const copiedFiles = await Promise.all(
+        files.map(async (file) => {
+          const newFile = new this.fileModel({
+            userId,
+            fileName: file.fileName,
+            size: file.size,
+            url: file.url,
+            mimetype: file.mimetype,
+            folder: null,
+          });
+          return await newFile.save();
+        }),
+      );
+      return { message: 'Files copied successfully!', data: copiedFiles };
+    }
+    const folder = await this.folderModel.findOne({
+      _id: new mongoose.Types.ObjectId(folderId),
+    });
+    console.log('Folder', folder);
+    if (!folder) throw new NotFoundException('Folder not found');
+    const copiedFiles = await Promise.all(
+      files.map(async (file) => {
+        const newFile = new this.fileModel({
+          userId,
+          fileName: file.fileName,
+          size: file.size,
+          url: file.url,
+          mimetype: file.mimetype,
+          folder: folderId,
+        });
+        return await newFile.save();
+      }),
+    );
+    return { message: 'Files copied successfully!', data: copiedFiles };
   }
 }

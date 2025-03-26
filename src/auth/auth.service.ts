@@ -280,6 +280,7 @@ export class AuthService {
     if (!userInfo) {
       throw new NotFoundException('User not Found!');
     }
+    console.log(resetPasswordDto.oldPassword, userInfo.password);
     let isMatch = await comparePassword(
       resetPasswordDto.oldPassword,
       userInfo.password,

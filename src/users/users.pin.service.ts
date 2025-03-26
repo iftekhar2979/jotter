@@ -9,6 +9,7 @@ import { User } from './users.schema';
 import mongoose, { Model } from 'mongoose';
 import { JwtService } from '@nestjs/jwt';
 import { comparePasswordWithArgon } from 'src/common/bycrypt/bycrypt';
+import e from 'express';
 
 @Injectable()
 export class PinService {
@@ -107,5 +108,22 @@ export class PinService {
     };
     const token = this.jwtService.sign(payload);
     return { message: 'Password Matched', data: {}, token };
+  }
+  async updateMe(
+    user,
+    info: { name?: string; email?: string },
+  ): Promise<any> {
+    await Promise.all([
+      this.userModel.findOneAndUpdate(
+        { userID: user.id },
+        { name: info.name, email: info.email },
+        { new: true },
+      ),
+    ]);
+    return {
+      message: 'Information Upated Successfully',
+      data: {},
+      statusCode: 200,
+    };
   }
 }

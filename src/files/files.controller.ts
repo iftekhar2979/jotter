@@ -127,7 +127,7 @@ export class FilesController {
       size: stream.fileSize,
       key: stream.key,
       folderId,
-      fileId:id,
+      fileId: id,
     });
   }
   @Delete('/:fileId')
@@ -231,6 +231,22 @@ export class FilesController {
       page,
       limit,
       type,
+    });
+  }
+  @Post('/copy')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('user')
+ copyFile(
+    @Request() req,
+    @Body() { files, folderId }: { files: string[]; folderId: string },
+  ) {
+    if(files.length === 0){
+      throw new BadRequestException('No files selected');
+    }
+      return this.fileService.copyDocument({
+      fileId: files,
+      folderId,
+      userId: req.user.id,
     });
   }
 }

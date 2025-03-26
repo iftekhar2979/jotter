@@ -1,3 +1,4 @@
+import { Roles } from './../common/custom-decorator/role.decorator';
 import { error } from 'console';
 import { UserService } from 'src/users/users.service';
 import {
@@ -13,6 +14,7 @@ import { AuthService } from './auth.service';
 import { authDto, forgetPasswordDto, resetPasswordDto } from './dto/auth.dto';
 import { CreateUserDto } from 'src/users/dto/createUser.dto';
 import { JwtAuthGuard } from './guard/jwt-auth.guard';
+import { RolesGuard } from './guard/role-gurad';
 
 @Controller('auth')
 export class AuthController {
@@ -28,14 +30,16 @@ export class AuthController {
     return this.authService.find(authDto);
   }
   @Post('otp/verify')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard ,RolesGuard)
+  @Roles('user','admin')
   VerifyOtp(@Request() req, @Body() body: { code: string }) {
     const user = req.user; // Access user data from JWT
     const code = body.code;
     return this.authService.verifyOtp(user, code);
   }
   @Post('otp/resend')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard ,RolesGuard)
+  @Roles('user','admin')
   resendOtp(@Request() req) {
     const user = req.user; // Access user data from JWT
     return this.authService.resendOtp(user);

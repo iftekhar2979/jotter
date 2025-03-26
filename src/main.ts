@@ -21,6 +21,10 @@ async function bootstrap() {
   );
   const seederService = app.get(SeederService);
   await seederService.seedData();
+  await seederService.seedAdminUser();
+  app.enableCors({
+    origin: '*',
+  });
   app.useGlobalFilters(new MongoDuplicateKeyExceptionFilter());
   app.useGlobalFilters(new ValidationExceptionFilter());
   app.useGlobalFilters(new UnauthorizedExceptionFilter());

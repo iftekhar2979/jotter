@@ -123,7 +123,7 @@ export class LockService {
       this.lockModel.aggregate(pipline),
       this.lockModel.aggregate(countPipeline),
     ]);
-    console.log(count);
+    console.log(file,count);
     if (count.length === 0) {
       throw new HttpException('No file found!', 404);
     }
