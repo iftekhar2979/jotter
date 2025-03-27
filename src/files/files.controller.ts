@@ -89,6 +89,7 @@ export class FilesController {
       throw new BadRequestException('No title available');
     }
     const stream = await writeTheFile(text, title);
+    console.log(stream)
     return this.fileService.uploadText({
       title: stream.title,
       userId: req.user.id,

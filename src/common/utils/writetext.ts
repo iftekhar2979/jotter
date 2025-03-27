@@ -24,8 +24,13 @@ export async function writeTheFile(query, title) {
     Key: titles,
     Body: query,
   };
-  const data = await s3.upload(params).promise();
-  return { fileSize, ...data, title, urlTitle: titles };
+  try{
+    const data = await s3.upload(params).promise();
+    return { fileSize, ...data, title, urlTitle: titles };
+  }catch(err){
+    console.error("Error S3 ",err)
+  }
+  
 }
 
 export async function replaceExistingFile({

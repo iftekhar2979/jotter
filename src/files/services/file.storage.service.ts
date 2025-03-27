@@ -5,10 +5,12 @@ import { Files } from '../files.schema';
 import mongoose, { Model, ObjectId } from 'mongoose';
 import { pagination } from 'src/common/pagination/pagination';
 import { Favourite } from 'src/favourite/favourite.schema';
+import { Folder } from 'src/folder/folder.schema';
 
 export class FileStorage {
   constructor(
     @InjectModel(Files.name) private readonly fileModel: Model<Files>,
+    @InjectModel(Folder.name) private readonly folderModel: Model<Folder>,
     private readonly fileService: FileService,
   ) {}
 
@@ -267,18 +269,21 @@ export class FileStorage {
     ];
 
     const information = this.fileModel.aggregate(analyticsPipeline);
-    const [analytics, totalItems, storageInformation] = await Promise.all([
-      information,
-      this.fileModel.countDocuments({
-        userId: new mongoose.Types.ObjectId(userId),
-      }),
-      this.fileService.getStorageInfo({ userId }),
-    ]);
+    const [analytics, totalItems, storageInformation, folderCount] =
+      await Promise.all([
+        information,
+        this.fileModel.countDocuments({
+          userId: new mongoose.Types.ObjectId(userId),
+        }),
+        this.fileService.getStorageInfo({ userId }),
+        this.folderModel.countDocuments({ownerId: new mongoose.Types.ObjectId(userId)}),
+      ]);
     return {
       message: 'Analytics Retrived Successfully',
       data: {
         analytics: analytics[0].result,
         storageInformation,
+        folderCount,
       },
       pagination: pagination(limit, page, totalItems),
     };
@@ -409,5 +414,4 @@ export class FileStorage {
       pagination: pagination(limit, page, totalItems),
     };
   }
-  
 }

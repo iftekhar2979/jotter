@@ -361,8 +361,41 @@ export class FileService {
                   : {}),
               },
             },
+            {
+              $lookup: {
+                from: 'locks',
+                localField: '_id',
+                foreignField: 'fileId',
+                as: 'locked',
+                pipeline: [
+                  {
+                    $project: {
+                      id: 1,
+                    },
+                  },
+                ],
+              },
+            },
+            {
+              $addFields: {
+               
+                isLocked: {
+                  $cond: {
+                    if: { $gt: [{ $size: '$locked' }, 0] },
+                    then: true,
+                    else: false,
+                  },
+                },
+              },
+            },
+            {
+              $match: {
+                $or: [{ isLocked: false }, { isLocked: { $exists: false } }],
+              },
+            },
           ],
         },
+        
       },
       {
         $count: 'totalCount', // Count the total number of documents
@@ -394,13 +427,13 @@ export class FileService {
     key: string;
     fileId?: string;
   }) {
-    console.log(fileId);
+    console.log("Key",key);
     if (fileId) {
       const file = await this.fileModel.findByIdAndUpdate(fileId, {
         userId,
         fileName: title,
         size: size,
-        url: `${key}`,
+        url: `jotter/${key}`,
         mimetype: 'text/plain',
         folder: folderId ? new mongoose.Types.ObjectId(folderId) : null,
       });
@@ -414,7 +447,7 @@ export class FileService {
         userId,
         fileName: title,
         size: size,
-        url: `${key}`,
+        url: `jotter/${key}`,
         mimetype: 'text/plain',
         folder: folderId ? new mongoose.Types.ObjectId(folderId) : null,
       });
