@@ -33,7 +33,6 @@ export class PinService {
         tokenFor: 'auth',
         pin: 'checked',
       };
-      console.log(payload);
       const token = this.jwtService.sign(payload);
       return { message: 'Pin changed successfully', data: {}, token };
     }

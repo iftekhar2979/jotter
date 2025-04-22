@@ -12,7 +12,7 @@ export class OcrService {
         console.log(imagePath)
       const { data: { text } } = await Tesseract.recognize(
         imagePath,
-        'eng',
+        'eng+spa+fra+deu',
       );
       return text; 
     } catch (error) {

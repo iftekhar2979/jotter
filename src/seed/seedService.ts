@@ -21,10 +21,10 @@ export class SeederService {
   async seedAdminUser() {
     const adminEmail = 'whippedcream@jotter.com'; // Use a valid email
     const existingAdmin = await this.userService.findByEmail(adminEmail);
-    // console.log(existingAdmin)
+    console.log(existingAdmin)
     // let date = new Date();
     if (!existingAdmin) {
-      const adminDto = {
+      const adminDto:any = {
         email: adminEmail,
         password: '1qazxsw2', // Set your preferred password or generate one
         role: 'admin', // Adjust if you have roles set up

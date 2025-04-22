@@ -433,7 +433,7 @@ export class FileService {
         userId,
         fileName: title,
         size: size,
-        url: `jotter/${key}`,
+        url: `whippedcream/${key}`,
         mimetype: 'text/plain',
         folder: folderId ? new mongoose.Types.ObjectId(folderId) : null,
       });
@@ -447,7 +447,7 @@ export class FileService {
         userId,
         fileName: title,
         size: size,
-        url: `jotter/${key}`,
+        url: `whippedcream/${key}`,
         mimetype: 'text/plain',
         folder: folderId ? new mongoose.Types.ObjectId(folderId) : null,
       });

@@ -11,7 +11,9 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { SeederService } from './seed/seedService';
 
 async function bootstrap() {
+  // const shouldPublishGraph = process.env.PUBLISH_GRAPH === "true";
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+ 
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true, // Automatically transform plain objects into DTOs
@@ -19,9 +21,11 @@ async function bootstrap() {
       forbidNonWhitelisted: true, // Throws error if unknown properties are passed
     }),
   );
+  
   const seederService = app.get(SeederService);
   await seederService.seedData();
   await seederService.seedAdminUser();
+
   app.enableCors({
     origin: '*',
   });

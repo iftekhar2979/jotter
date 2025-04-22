@@ -37,7 +37,7 @@ export class FileStorage {
   }
   async filterFile({
     userId,
-    type,
+    type='image',
     name,
     limit = 10,
     page = 1,
@@ -50,13 +50,18 @@ export class FileStorage {
   }) {
     let query: any = {
       userId,
+      mimetype :{ $regex: type, $options: 'i' }
     };
+    // if (type) {
+    //   query.mimetype = { $regex: type, $options: 'i' };
+    // }
     if (name) {
-      query.fileName = { $regex: name, $options: 'i' };
+      query.$or = [
+        { fileName: { $regex: name, $options: 'i' } },
+        { recognizedText: { $regex: name, $options: 'i' } }
+      ];
     }
-    if (type) {
-      query.mimetype = { $regex: type, $options: 'i' };
-    }
+  
     const file = await this.fileModel
       .aggregate([
         {
@@ -169,6 +174,45 @@ export class FileStorage {
           userId: new mongoose.Types.ObjectId(userId),
         },
       },
+     
+      {
+        $lookup: {
+          from: 'locks',
+          localField: '_id',
+          foreignField: 'fileId',
+          as: 'locked',
+          pipeline: [
+            {
+              $project: {
+                id: 1,
+              },
+            },
+          ],
+        },
+      },
+      {
+        $addFields: {
+          // isFavourite: {
+          //   $cond: {
+          //     if: { $gt: [{ $size: '$favourite' }, 0] },
+          //     then: true,
+          //     else: false,
+          //   },
+          // },
+          isLocked: {
+            $cond: {
+              if: { $gt: [{ $size: '$locked' }, 0] },
+              then: true,
+              else: false,
+            },
+          },
+        },
+      },
+      {
+        $match: {
+          isLocked: false,
+        },
+      },
       {
         $project: {
           // Create a new field `category` to classify each file type
@@ -268,7 +312,7 @@ export class FileStorage {
       },
     ];
 
-    const information = this.fileModel.aggregate(analyticsPipeline);
+    const information =await this.fileModel.aggregate(analyticsPipeline);
     const [analytics, totalItems, storageInformation, folderCount] =
       await Promise.all([
         information,
@@ -278,6 +322,7 @@ export class FileStorage {
         this.fileService.getStorageInfo({ userId }),
         this.folderModel.countDocuments({ownerId: new mongoose.Types.ObjectId(userId)}),
       ]);
+
     return {
       message: 'Analytics Retrived Successfully',
       data: {

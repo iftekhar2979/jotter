@@ -11,6 +11,7 @@ export class SettingsService {
   ) {}
 
   async seed(seedData: any): Promise<any> {
+    console.log(seedData)
     for (const data of seedData) {
       const existing = await this.settingModel
         .findOne({ key: data.key })

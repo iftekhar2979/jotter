@@ -9,7 +9,7 @@ import { AuthModule } from './auth/auth.module';
 import { EmailserviceModule } from './emailservice/emailservice.module';
 import { ProfileModule } from './profile/profile.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
-import { join } from 'path';
+import path, { join } from 'path';
 import { ChatController } from './chat/chat.controller';
 import { ChatModule } from './chat/chat.module';
 import { FolderModule } from './folder/folder.module';
@@ -26,11 +26,15 @@ import { PinModule } from './pin/pin.module';
 import { SettingsModule } from './settings/settings.module';
 import { SeedModule } from './seed/seed.module';
 import { SeederService } from './seed/seedService';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports:  [
     // Connect to MongoDB
     MongooseModule.forRoot('mongodb://localhost:27017/jotter'),
+    ConfigModule.forRoot({
+      isGlobal: true, 
+    }),
     UsersModule,
     AuthModule,
     ServeStaticModule.forRoot({

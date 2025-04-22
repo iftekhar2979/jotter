@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import mongoose, { Model, ObjectId } from 'mongoose';
 import { Folder } from './folder.schema';
+import { json } from 'stream/consumers';
 
 @Injectable()
 export class FolderService {
@@ -19,14 +20,36 @@ export class FolderService {
       name,
     });
     if (folderList) {
-      throw new BadRequestException('Folder Already Exist');
+      throw new BadRequestException('Folder Already Exists');
     }
 
-    const folder = new this.folderModel({
-      name,
-      ownerId,
-      parentFolderId,
-    });
+    let folder;
+    if (parentFolderId) {
+      // Find parent folder
+      const parentFolder = await this.folderModel.findOne({
+        _id: new mongoose.Types.ObjectId(parentFolderId),
+      });
+
+      if (!parentFolder) {
+        throw new BadRequestException('Parent Folder Not Found');
+      }
+
+      // Create child folder with the parent's path appended
+      folder = new this.folderModel({
+        name,
+        ownerId,
+        parentFolderId,
+        path: parentFolder.path + '/' + parentFolder.name, // Concatenate parent path with the new folder's name
+      });
+    } else {
+      // Root folder with empty path
+      folder = new this.folderModel({
+        name,
+        ownerId,
+        parentFolderId, // `parentFolderId` should be `null` or `undefined` for root folders
+        path: '', // Root folder has an empty path
+      });
+    }
 
     return folder.save();
   }
@@ -43,9 +66,11 @@ export class FolderService {
     ownerId?: ObjectId;
     folderId?: ObjectId;
   }): Promise<Folder> {
-
-    console.log(query)
-    return this.folderModel.findOne({ownerId:query.ownerId,_id:query.folderId});
+    console.log(query);
+    return this.folderModel.findOne({
+      ownerId: query.ownerId,
+      _id: query.folderId,
+    });
   }
   getAllFolders(query: {
     ownerId?: ObjectId;
@@ -56,19 +81,21 @@ export class FolderService {
   }
   getFilesAndFolder({
     ownerId,
-    parentFolderId =null,
-    name
-  }:{
+    parentFolderId = null,
+    name,
+  }: {
     ownerId?: ObjectId;
     parentFolderId?: ObjectId | null;
     name?: string;
   }): Promise<Folder[]> {
-   return  this.folderModel.aggregate([{
-    $match:{
-      parentFolderId,
-      ownerId
-    }
-   }])
+    return this.folderModel.aggregate([
+      {
+        $match: {
+          parentFolderId,
+          ownerId,
+        },
+      },
+    ]);
   }
 
   async getFolders(ownerId: ObjectId) {
@@ -90,7 +117,14 @@ export class FolderService {
   }
 
   // Delete a folder
-  async deleteFolder(id: string): Promise<Folder> {
-    return this.folderModel.findByIdAndDelete(id);
+  async deleteFolder(id: string) {
+    const folders = await this.folderModel.findById(id);
+    if (!folders) throw new BadRequestException('Folder Not Found');
+    const fullPath = (folders.path ? folders.path : '') + '/' + folders.name;
+    return await this.folderModel.deleteMany({
+      $or: [{ _id: folders.id }, { path: { $regex: `^${fullPath}` } }],
+    });
+
+    // return this.folderModel.findByIdAndDelete(id);
   }
 }

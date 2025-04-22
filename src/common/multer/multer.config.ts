@@ -51,23 +51,21 @@ export const multerConfig = {
     }
   },
 };
-
-
+console.log("ACESS",configService)
 
 // ✅ Define AWS S3 for MinIO using AWS SDK v2
 export const s3 = new AWS.S3({
-  accessKeyId: configService.get<string>('AWS_ACCESS_KEY_ID') || 'admin',
-  secretAccessKey: configService.get<string>('AWS_SECRET_ACCESS_KEY') || 'password',
-  endpoint: configService.get<string>('AWS_ENDPOINT') || 'http://localhost:9000',
+  accessKeyId: configService.get<string>('AWS_ACCESS_KEY_ID')  ,
+  secretAccessKey: configService.get<string>('AWS_SECRET_ACCESS_KEY') ,
+  endpoint: configService.get<string>('AWS_ENDPOINT') ,
   s3ForcePathStyle: true, // Required for MinIO
   signatureVersion: 'v4',
-});
-
+})
 // ✅ Configure Multer-S3 Storage
 export const multerS3Config = multerS3({
   s3: s3, // 🔹 Pass the defined `s3` object here
-  bucket: configService.get<string>('AWS_S3_BUCKET_NAME') || 'jotter',
-  acl: 'private',
+  bucket: configService.get<string>('AWS_S3_BUCKET_NAME') || 'whippedcream' ,
+  acl: 'public-read',
   metadata: (req, file, callback) => {
     // console.log("📂 Metadata received:", req);
     callback(null, { fieldName: file.fieldname  });

@@ -121,6 +121,7 @@ export class AuthService {
     if (!user) {
       throw new BadRequestException('User not Found!');
     }
+  
     let isMatch = await comparePasswordWithArgon(
       authDto.password,
       user.password,

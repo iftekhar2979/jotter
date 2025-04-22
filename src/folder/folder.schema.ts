@@ -7,15 +7,14 @@ export class Folder extends Document {
   @Prop({ required: true })
   name: string;
 
-  @Prop({ type: String,default:null })
-  parentFolderId:  string;
+  @Prop({ type: String, default: null })
+  parentFolderId: string;
 
-  @Prop({ default: '/' })
+  @Prop({ default: '' })
   path: string;
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
   ownerId: mongoose.Schema.Types.ObjectId;
-
   @Prop({ default: Date.now })
   createdAt: Date;
 
