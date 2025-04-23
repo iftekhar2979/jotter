@@ -18,13 +18,17 @@ const s3 = new aws.S3({
 export async function writeTheFile(query, title) {
   const fileSize = Buffer.byteLength(query, 'utf8');
   let titles = `${new Date().getTime()}-${title}`;
+  const contentType = 'text/plain';
   const params = {
-    Bucket: configService.get<string>('AWS_S3_BUCKET_NAME') || 'whippedcream', // Replace with your bucket name
+    Bucket: configService.get<string>('AWS_S3_BUCKET_NAME') , // Replace with your bucket name
     Key: titles,
     Body: query,
+    contentType: contentType,
+    ACL: 'public-read',
   };
   try{
     const data = await s3.upload(params).promise();
+    console.log(data)
     return { fileSize, ...data, title, urlTitle: titles };
   }catch(err){
     console.error("Error S3 ",err)
@@ -42,22 +46,26 @@ export async function replaceExistingFile({
   newTitle: string;
 }) {
   const fileSize = Buffer.byteLength(body, 'utf8');
+  const contentType = 'text/plain';
   const params = {
     Bucket: configService.get<string>('AWS_S3_BUCKET_NAME') || 'whippedcream', // Replace with your bucket name
     Key: existingTitle.split('/')[1],
     Body: body,
+    contentType: contentType,
+    ACL: 'public-read',
   };
+ 
   try {
     // Check if the file exists
     // const files = await s3.listObjectsV2({ Bucket: 'jotter' }).promise();
     // files.Contents.forEach((item) => {
     //   console.log(`Key: ${item.Key}, LastModified: ${item.LastModified}`);
     // });
-    console.log(existingTitle)
     const fileExists = await s3
       .headObject({ Bucket: configService.get<string>('AWS_S3_BUCKET_NAME') , Key: existingTitle.split('/')[1] })
       .promise();
 
+      console.warn('File exists:', fileExists);
     // If file exists, delete it before uploading the new one
     let del = await s3
       .deleteObject({ Bucket: params.Bucket, Key: params.Key })
@@ -73,9 +81,11 @@ export async function replaceExistingFile({
   }
 
   const uploadParams = {
-    Bucket: configService.get<string>('AWS_S3_BUCKET_NAME') || 'jotter',
+    Bucket: configService.get<string>('AWS_S3_BUCKET_NAME') || 'whippedcream',
     Key: params.Key,
     Body: body,
+    contentType: contentType,
+    ACL: 'public-read',
   };
 
   try {

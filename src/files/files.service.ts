@@ -401,7 +401,6 @@ export class FileService {
         $count: 'totalCount', // Count the total number of documents
       },
     ]);
-    // console.log(total[0].totalCount);
     if (total.length === 0) {
       throw new HttpException('No Files Found', 404);
     }

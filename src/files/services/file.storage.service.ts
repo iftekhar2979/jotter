@@ -6,7 +6,10 @@ import mongoose, { Model, ObjectId } from 'mongoose';
 import { pagination } from 'src/common/pagination/pagination';
 import { Favourite } from 'src/favourite/favourite.schema';
 import { Folder } from 'src/folder/folder.schema';
+import { s3 } from 'src/common/multer/multer.config';
+import { ConfigService } from '@nestjs/config';
 
+const configService = new ConfigService();
 export class FileStorage {
   constructor(
     @InjectModel(Files.name) private readonly fileModel: Model<Files>,
@@ -130,14 +133,80 @@ export class FileStorage {
       .skip(limit * (page - 1))
       .limit(limit);
 
-    const count = await this.fileModel.countDocuments(query);
-    if (!file) {
+
+      const countQuery=[
+        {
+          $match: query,
+        },
+        {
+          $lookup: {
+            from: 'favourites',
+            localField: '_id',
+            foreignField: 'fileId',
+            as: 'favourite',
+            pipeline: [
+              {
+                $project: {
+                  id: 1,
+                },
+              },
+            ],
+          },
+        },
+        {
+          $lookup: {
+            from: 'locks',
+            localField: '_id',
+            foreignField: 'fileId',
+            as: 'locked',
+            pipeline: [
+              {
+                $project: {
+                  id: 1,
+                },
+              },
+            ],
+          },
+        },
+        {
+          $addFields: {
+            isFavourite: {
+              $cond: {
+                if: { $gt: [{ $size: '$favourite' }, 0] },
+                then: true,
+                else: false,
+              },
+            },
+            isLocked: {
+              $cond: {
+                if: { $gt: [{ $size: '$locked' }, 0] },
+                then: true,
+                else: false,
+              },
+            },
+          },
+        },
+        {
+          $match: {
+            isLocked: false,
+          },
+        },
+        {
+          $count: 'totalCount',
+        },
+      ]
+    const count = await this.fileModel.aggregate(countQuery);
+    console.log(file)
+    if(count.length===0){
       throw new HttpException('No file found', 404);
+    }
+    if (!file) {
+      throw new HttpException(`No ${type} found`, 404);
     }
     return {
       message: 'File retrived successfully!',
       data: file,
-      pagination: pagination(limit, page, count),
+      pagination: pagination(limit, page, count[0]?.totalCount || 0),
     };
   }
   async deleteFile({ userId, fileId }: { userId: string; fileId: ObjectId }) {
@@ -148,6 +217,9 @@ export class FileStorage {
     if (file.userId.toString() !== userId) {
       throw new BadRequestException('File is not accessible!');
     }
+     await s3
+    .deleteObject({ Bucket: configService.get<string>('AWS_S3_BUCKET_NAME'), Key: file.url.split("/")[1] })
+    .promise();
     await this.fileService.updateStorage({
       userId: new mongoose.Types.ObjectId(userId) as unknown as ObjectId,
       size: parseFloat((file.size / (1024 * 1024)).toFixed(2)),

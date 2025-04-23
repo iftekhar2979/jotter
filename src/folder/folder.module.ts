@@ -6,6 +6,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Folder, FolderSchema } from './folder.schema';
 import { UsersModule } from 'src/users/users.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { FileSchema } from 'src/files/files.schema';
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       }),
       inject: [ConfigService],
     }),
-    MongooseModule.forFeature([{ name: Folder.name, schema: FolderSchema }]),
+    MongooseModule.forFeature([{ name: Folder.name, schema: FolderSchema },{name:File.name,schema:FileSchema}]),
     UsersModule,
   ],
   controllers: [FolderController],
