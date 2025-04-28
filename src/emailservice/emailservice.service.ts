@@ -2,30 +2,30 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { ConfigService } from '@nestjs/config'; // If you are using environment variables
 
+const configService = new ConfigService()
 @Injectable()
 export class EmailService {
   private transporter: nodemailer.Transporter;
 
   constructor() {
-    console.log('email', process.env.SMTP_USERNAME);
+
     this.transporter = nodemailer.createTransport({
       service: 'gmail', // Or your chosen email service provider
       auth: {
-        user: 'salminrashid556@gmail.com', // Your email address
-        pass: 'qpwe buzr dppt cibl', // Your email password
+        user: configService.get<string>('SMTP_USERNAME'), 
+        pass: configService.get<string>('SMTP_PASSWORD'), 
       },
     });
   }
 
   // Function to send OTP email
   async sendOtpEmail(to: string, otp: string, userName: string) {
-    console.log('email', to);
     const htmlTemplate = this.getOtpHtmlTemplate(userName, otp);
 
     const mailOptions = {
       from: process.env.SMTP_USERNAME,
       to,
-      subject: 'Vibely OTP for Registration',
+      subject: 'Jotter OTP for Registration',
       html: htmlTemplate,
     };
     try {
@@ -45,7 +45,7 @@ export class EmailService {
       <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Vibely - OTP for Registration</title>
+          <title>Jotter - OTP for Registration</title>
           <style>
               body {
                   font-family: Arial, sans-serif;
@@ -114,11 +114,11 @@ export class EmailService {
                       <strong>${otp}</strong>
                   </div>
                   <p>The OTP is valid for the next 10 minutes. If you didn't request this OTP, please ignore this email.</p>
-                  <p>If you have any questions or need help, feel free to contact us at <a href="mailto:support@vibelyapp.com">support@vibelyapp.com</a>.</p>
+                  <p>If you have any questions or need help, feel free to contact us at <a href="mailto:support@jotter.com">support@jotter.com</a>.</p>
               </div>
   
               <div class="email-footer">
-                  <p>The <strong>Vibely Team</strong></p>
+                  <p>The <strong>Jotter Team</strong></p>
                   <p><a href="https://vibelyapp.com" target="_blank">Visit Vibely</a> | <a href="https://vibelyapp.com/privacy-policy" target="_blank">Privacy Policy</a> | <a href="https://vibelyapp.com/terms" target="_blank">Terms of Service</a></p>
                   <p>This is an automated email, please do not reply directly to this message.</p>
               </div>

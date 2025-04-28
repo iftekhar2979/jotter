@@ -146,10 +146,10 @@ export class FolderService {
     try {
       await Promise.all([
         await s3.deleteObjects(deleteParams).promise(),
-        await await this.fileModel.find({
+        await await this.fileModel.deleteMany({
           folder: { $in: nestedChildsIds },
         }),
-        await this.folderModel.find({
+        await this.folderModel.deleteMany({
           $or: [{ _id: folders.id }, { path: { $regex: `^${fullPath}` } }],
         }),
       ]);

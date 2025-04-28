@@ -45,6 +45,12 @@ export class FilesController {
     @Param('fileId') fileId: string,
     @Body('fileName') fileName: string,
   ) {
+    if(!fileName) {
+      throw new BadRequestException('File name is required');
+    }
+    if(!fileId) {
+      throw new BadRequestException('File Id is required');
+    }
     return await this.fileStorage.renameFile({
       userId: req.user.id,
       fileName,

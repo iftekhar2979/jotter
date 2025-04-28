@@ -51,7 +51,6 @@ export const multerConfig = {
     }
   },
 };
-console.log("ACESS",configService)
 
 // ✅ Define AWS S3 for MinIO using AWS SDK v2
 export const s3 = new AWS.S3({

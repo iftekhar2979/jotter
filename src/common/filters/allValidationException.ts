@@ -8,7 +8,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const response = context.getResponse<Response>();
     const request = context.getRequest<Request>();
 
-    console.log(exception)
     let errorResponse = {
       statusCode: exception.status || 500,
       message: exception.message || 'Internal Server Error',
