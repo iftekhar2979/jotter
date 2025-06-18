@@ -16,7 +16,7 @@ import { OcrService } from 'src/ocr/ocr.service';
 
 @Module({
   imports: [
-     JwtModule.registerAsync({
+    JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
@@ -37,7 +37,7 @@ import { OcrService } from 'src/ocr/ocr.service';
     FolderModule,
   ], // Ensure ConfigModule is imported
   controllers: [FilesController],
-  providers: [AwsS3StorageProvider, FileService, FileStorage,OcrService], // Register the provider
+  providers: [AwsS3StorageProvider, FileService, FileStorage, OcrService], // Register the provider
   exports: [AwsS3StorageProvider, FileService, FileStorage], // Export it if used in another module
 })
 export class FilesModule {}

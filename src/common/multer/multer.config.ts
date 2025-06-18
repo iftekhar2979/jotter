@@ -63,7 +63,7 @@ export const s3 = new AWS.S3({
 // ✅ Configure Multer-S3 Storage
 export const multerS3Config = multerS3({
   s3: s3, // 🔹 Pass the defined `s3` object here
-  bucket: configService.get<string>('AWS_S3_BUCKET_NAME') || 'whippedcream' ,
+  bucket: configService.get<string>('AWS_S3_BUCKET_NAME') || "whippedcream" ,
   acl: 'public-read',
   metadata: (req, file, callback) => {
     // console.log("📂 Metadata received:", req);

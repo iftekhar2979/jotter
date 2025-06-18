@@ -153,6 +153,8 @@ export class Profile extends Document {
   dOB: Date;
   @Prop()
   gender: string;
+  @Prop({required:true, type:String})
+  goal: string;
   @Prop({required:true})
   address: string;
   @Prop({ type: Object })
@@ -168,4 +170,5 @@ ProfileSchema.index({
   values: 'text',
   lifeStyle: 'text',
   gender: 'text',
+  goal:'text'
 });

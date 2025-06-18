@@ -40,6 +40,10 @@ export class EditProfileBasicInfoDto {
   height?: string;
 
   @IsOptional()
+  @IsString()
+  goal?: string;
+
+  @IsOptional()
   @IsNumber()
   age?: number;
 }

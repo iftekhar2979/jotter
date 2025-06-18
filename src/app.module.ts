@@ -61,7 +61,6 @@ import { ConfigModule } from '@nestjs/config';
     },
     AppService,
     OcrService,
-    
     SeederService,
     // MinioService,
   ],

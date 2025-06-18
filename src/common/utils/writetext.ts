@@ -1,4 +1,5 @@
 import { ConfigService } from '@nestjs/config';
+// import AWS from 'aws-sdk';
 
 const fs = require('fs');
 const path = require('path');
@@ -15,9 +16,10 @@ const s3 = new aws.S3({
   s3ForcePathStyle: true,
   signatureVersion: 'v4',
 });
+const cloudFront = new aws.CloudFront();
 export async function writeTheFile(query, title) {
   const fileSize = Buffer.byteLength(query, 'utf8');
-  let titles = `${new Date().getTime()}-${title}`;
+  const titles = `${new Date().getTime()}-${title}`;
   const contentType = 'text/plain';
   const params = {
     Bucket: configService.get<string>('AWS_S3_BUCKET_NAME') , // Replace with your bucket name
@@ -48,7 +50,7 @@ export async function replaceExistingFile({
   const fileSize = Buffer.byteLength(body, 'utf8');
   const contentType = 'text/plain';
   const params = {
-    Bucket: configService.get<string>('AWS_S3_BUCKET_NAME') || 'whippedcream', // Replace with your bucket name
+    Bucket: configService.get<string>('AWS_S3_BUCKET_NAME') , // Replace with your bucket name
     Key: existingTitle.split('/')[1],
     Body: body,
     contentType: contentType,
@@ -65,6 +67,29 @@ export async function replaceExistingFile({
       .headObject({ Bucket: configService.get<string>('AWS_S3_BUCKET_NAME') , Key: existingTitle.split('/')[1] })
       .promise();
 
+      const fileKey: string = existingTitle.split('/')[1];
+      const distributionId: string = configService.get<string>('AWS_CLOUDFONT_DISTRIBUTION_ID') || '';
+
+      const invalidationParams: any = {
+        DistributionId: distributionId,
+        InvalidationBatch: {
+          CallerReference: `${Date.now()}`, // must be unique for each request
+          Paths: {
+        Quantity: 1,
+        Items: [`/${fileKey}`], // include the leading slash
+          },
+        },
+      };
+    console.log(fileKey)
+      try{
+        console.log(invalidationParams.InvalidationBatch.Items)
+       const invalid = await cloudFront.createInvalidation(invalidationParams).promise();
+       console.log(invalid)
+
+      }catch(error){
+        console.warn("Invalidation faild on Cloud Font",error)
+      }
+       
       console.warn('File exists:', fileExists);
     // If file exists, delete it before uploading the new one
     let del = await s3
@@ -79,7 +104,6 @@ export async function replaceExistingFile({
       console.error('Error checking for file:', error);
     }
   }
-
   const uploadParams = {
     Bucket: configService.get<string>('AWS_S3_BUCKET_NAME') || 'whippedcream',
     Key: params.Key,
@@ -94,5 +118,6 @@ export async function replaceExistingFile({
     return { fileSize, ...data, title: newTitle };
   } catch (uploadError) {
     console.error('Error uploading file:', uploadError);
+   
   }
 }

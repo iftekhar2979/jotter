@@ -102,7 +102,6 @@ export class FileService {
             )}/${this.configService.get<string>('AWS_S3_BUCKET_NAME')}/${file.key}`,
           );
         }
-        console.log(recognizedText);
         return {
           userId,
           fileName: file.originalname,
@@ -446,7 +445,7 @@ export class FileService {
         userId,
         fileName: title,
         size: size,
-        url: `whippedcream/${key}`,
+        url: `${this.configService.get<string>('AWS_S3_BUCKET_NAME')}/${key}`,
         mimetype: 'text/plain',
         folder: folderId ? new mongoose.Types.ObjectId(folderId) : null,
       });
@@ -468,10 +467,7 @@ export class FileService {
     folderId: string;
     userId: string;
   }) {
-    console.log(folderId);
-    // console.log(fileId, folderId, userId);
     const files = await this.fileModel.find({ _id: { $in: fileId }, userId });
-    console.log(files);
     if (!files) throw new NotFoundException('Files not found');
     if (!folderId) {
       const copiedFiles = await Promise.all(

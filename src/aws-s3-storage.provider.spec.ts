@@ -23,7 +23,6 @@ jest.mock('aws-sdk', () => {
 describe('AwsS3StorageProvider', () => {
   let storageProvider: AwsS3StorageProvider;
   let configService: ConfigService;
-
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -68,4 +67,4 @@ describe('AwsS3StorageProvider', () => {
       signatureVersion: 'v4',
     });
   });
-});
+})

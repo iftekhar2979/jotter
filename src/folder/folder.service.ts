@@ -2,9 +2,6 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import mongoose, { Model, ObjectId } from 'mongoose';
 import { Folder } from './folder.schema';
-import { json } from 'stream/consumers';
-import { s3 } from 'src/common/multer/multer.config';
-import { ConfigService } from '@nestjs/config';
 import { Files } from 'src/files/files.schema';
 
 @Injectable()
@@ -12,7 +9,6 @@ export class FolderService {
   constructor(
     @InjectModel(Folder.name) private folderModel: Model<Folder>,
     @InjectModel(File.name) private fileModel: Model<File>,
-    private readonly configService: ConfigService,
   ) {}
 
   // Create a new folder
@@ -106,7 +102,7 @@ export class FolderService {
   }
 
   async getFolders(ownerId: ObjectId) {
-    let folders = await this.getAllFolders({ ownerId });
+    const folders = await this.getAllFolders({ ownerId });
     return { message: 'Folders Retrived Successfully!', data: folders };
   }
   // Get folder by id
@@ -128,25 +124,25 @@ export class FolderService {
     const folders = await this.folderModel.findById(id);
     if (!folders) throw new BadRequestException('Folder Not Found');
     const fullPath = (folders.path ? folders.path : '') + '/' + folders.name;
-    let nestedChilds = await this.folderModel.find({
+    const nestedChilds = await this.folderModel.find({
       $or: [{ _id: folders.id }, { path: { $regex: `^${fullPath}` } }],
     });
     const nestedChildsIds = nestedChilds.map((folder) => folder._id);
-    let files = (await this.fileModel.find({
+    const files = (await this.fileModel.find({
       folder: { $in: nestedChildsIds },
     })) as Files[];
-    const deleteParams = {
-      Bucket: this.configService.get('AWS_S3_BUCKET_NAME'),
-      Delete: {
-        Objects: files.map((file) => ({ Key: file.url.split('/')[1] })),
-        Quiet: false, // Set to true to suppress response details (optional)
-      },
-    };
+    // const deleteParams = {
+    //   Bucket: this.configService.get('AWS_S3_BUCKET_NAME'),
+    //   Delete: {
+    //     Objects: files.map((file) => ({ Key: file.url.split('/')[1] })),
+    //     Quiet: false, // Set to true to suppress response details (optional)
+    //   },
+    // };
 
     try {
       await Promise.all([
-        await s3.deleteObjects(deleteParams).promise(),
-        await await this.fileModel.deleteMany({
+        // await s3.deleteObjects(deleteParams).promise(),
+        await this.fileModel.deleteMany({
           folder: { $in: nestedChildsIds },
         }),
         await this.folderModel.deleteMany({

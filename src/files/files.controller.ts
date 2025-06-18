@@ -122,16 +122,20 @@ export class FilesController {
       console.error('No title available');
       throw new BadRequestException('No title available');
     }
+
     const stream = await replaceExistingFile({
       body: text,
       existingTitle,
-      newTitle: title,
+      newTitle: title ,
     });
+    console.log(existingTitle,"--------existing titile");
+    console.log(title, 'title---------------------------><');
+    console.log(stream)
     return this.fileService.uploadText({
-      title: stream.title,
+      title: stream?.title,
       userId: req.user.id,
-      size: stream.fileSize,
-      key: stream.key,
+      size: stream?.fileSize,
+      key: stream?.key,
       folderId,
       fileId: id,
     });
@@ -206,6 +210,7 @@ export class FilesController {
     @Request() req,
     @Query('page') page: any,
     @Query('limit') limit: any,
+    @Query('term') term:string
   ) {
     if (page || limit) {
       page = parseFloat(page as string);
@@ -215,6 +220,7 @@ export class FilesController {
       userId: req.user.id,
       limit,
       page,
+      term
     });
   }
   @Get('/category')

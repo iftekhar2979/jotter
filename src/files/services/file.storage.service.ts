@@ -133,7 +133,9 @@ export class FileStorage {
             locked: 0,
           },
         },
+
       ])
+      .sort({updatedAt:-1})
       .skip(limit * (page - 1))
       .limit(limit);
 
@@ -417,15 +419,24 @@ export class FileStorage {
     userId,
     limit = 10,
     page = 1,
+    term=''
   }: {
     userId: string;
     limit: number;
     page: number;
+    term:string;
   }) {
     const recentUploads = this.fileModel
       .aggregate([
         {
-          $match: { userId: new mongoose.Types.ObjectId(userId) },
+          $match: {
+            userId: new mongoose.Types.ObjectId(userId),
+            $or: [
+              { fileName: { $regex: term, $options: 'i' } },
+              { recognizedText: { $regex: term, $options: 'i' } },
+            ],
+          },
+   
         },
         {
           $lookup: {
@@ -485,15 +496,21 @@ export class FileStorage {
             favourite: 0,
             locked: 0,
           },
-        },
+        }
       ])
-      .sort({ createdAt: -1 })
+      .sort({ updatedAt: -1 })
       .limit(limit)
       .skip((page - 1) * limit);
     const [recent, totalItems] = await Promise.all([
       recentUploads,
       this.fileModel.countDocuments({
-        userId: new mongoose.Types.ObjectId(userId),
+        userId: new mongoose.Types.ObjectId(userId), 
+        
+        $or: [
+          { fileName: { $regex: term, $options: 'i' } },
+          { recognizedText: { $regex: term, $options: 'i' } },
+        ],
+      
       }),
     ]);
     return {
@@ -507,11 +524,13 @@ export class FileStorage {
     date,
     limit = 10,
     page = 1,
+    term= ""
   }: {
     date: string;
     userId: string;
     limit: number;
     page: number;
+    term:string
   }) {
     const startDate = new Date(date).getTime();
     const endDate = new Date(startDate);
@@ -520,6 +539,7 @@ export class FileStorage {
       .find({
         userId: new mongoose.Types.ObjectId(userId),
         createdAt: { $gte: startDate, $lt: endDate },
+     
       })
       .sort({ updatedAt: -1 })
       .limit(limit)
@@ -530,6 +550,7 @@ export class FileStorage {
       this.fileModel.countDocuments({
         userId: new mongoose.Types.ObjectId(userId),
         createdAt: { $gte: startDate, $lt: endDate },
+       
       }),
     ]);
 
