@@ -1,6 +1,6 @@
 <div align="center">
 
-# 📝 Jotter (Vibely)
+# 📝 Jotter 
 
 ### A powerful, feature-rich REST API backend built with NestJS
 
